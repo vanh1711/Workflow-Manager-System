@@ -33,7 +33,6 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@Profile("dev")
 @ConditionalOnProperty(name = "app.seeder.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {

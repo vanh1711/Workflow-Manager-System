@@ -49,6 +49,29 @@ public class ViewExceptionHandler {
     }
 
     /**
+     * Xử lý lỗi xung đột cập nhật đồng thời (Optimistic Locking @Version) trên giao diện web.
+     * Thông báo nhẹ nhàng và hướng dẫn người dùng tải lại trang thay vì văng lỗi 500.
+     */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public String handleOptimisticLockingFailure(
+        org.springframework.orm.ObjectOptimisticLockingFailureException ex,
+        HttpServletRequest request,
+        RedirectAttributes redirectAttributes
+    ) {
+        log.warn("Optimistic locking conflict in web view [{}]: {}", request.getRequestURI(), ex.getMessage());
+        redirectAttributes.addFlashAttribute(
+            "errorMessage",
+            "Dữ liệu công việc vừa được cập nhật bởi thành viên khác. Vui lòng tải lại trang để xem dữ liệu mới nhất!"
+        );
+
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            return "redirect:" + referer;
+        }
+        return "redirect:/tasks";
+    }
+
+    /**
      * Xử lý lỗi ngoại lệ không mong muốn trên giao diện web (trả về trang 500.html).
      */
     @ExceptionHandler(Exception.class)

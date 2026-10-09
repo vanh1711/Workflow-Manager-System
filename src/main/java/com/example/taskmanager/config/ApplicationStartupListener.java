@@ -36,7 +36,9 @@ public class ApplicationStartupListener {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        String port = environment.getProperty("local.server.port", environment.getProperty("server.port", "8080"));
+        String port = environment.getProperty("local.server.port",
+            environment.getProperty("server.port",
+                environment.getProperty("PORT", "8080")));
         String contextPath = environment.getProperty("server.servlet.context-path", "");
         if (contextPath == null || "/".equals(contextPath)) {
             contextPath = "";

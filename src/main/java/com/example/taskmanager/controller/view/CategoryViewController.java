@@ -7,6 +7,7 @@ import com.example.taskmanager.dto.response.UserSummaryResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -34,8 +35,8 @@ public class CategoryViewController {
     }
 
     @GetMapping("/new")
-    public String showCreateForm(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (isMemberRole(session)) {
+    public String showCreateForm(Model model, Authentication authentication, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới được phép tạo danh mục dự án!");
             return "redirect:/categories";
         }
@@ -54,10 +55,11 @@ public class CategoryViewController {
         @Valid @ModelAttribute("categoryRequest") CategoryRequest categoryRequest,
         BindingResult bindingResult,
         Model model,
+        Authentication authentication,
         HttpSession session,
         RedirectAttributes redirectAttributes
     ) {
-        if (isMemberRole(session)) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới được phép tạo danh mục dự án!");
             return "redirect:/categories";
         }
@@ -74,8 +76,8 @@ public class CategoryViewController {
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Long id, Model model, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (isMemberRole(session)) {
+    public String showEditForm(@PathVariable Long id, Model model, Authentication authentication, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới có quyền chỉnh sửa danh mục dự án!");
             return "redirect:/categories";
         }
@@ -100,10 +102,11 @@ public class CategoryViewController {
         @Valid @ModelAttribute("categoryRequest") CategoryRequest categoryRequest,
         BindingResult bindingResult,
         Model model,
+        Authentication authentication,
         HttpSession session,
         RedirectAttributes redirectAttributes
     ) {
-        if (isMemberRole(session)) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới có quyền chỉnh sửa danh mục dự án!");
             return "redirect:/categories";
         }
@@ -121,8 +124,8 @@ public class CategoryViewController {
     }
 
     @PostMapping("/{id}/delete")
-    public String deleteCategory(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (isMemberRole(session)) {
+    public String deleteCategory(@PathVariable Long id, Authentication authentication, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới có quyền xóa danh mục dự án!");
             return "redirect:/categories";
         }
@@ -132,13 +135,16 @@ public class CategoryViewController {
         return "redirect:/categories";
     }
 
-    private boolean isMemberRole(HttpSession session) {
-        if (session == null) {
-            return false;
+    private boolean isMemberRole(Authentication authentication, HttpSession session) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_MEMBER".equals(a.getAuthority()));
         }
-        Object userObj = session.getAttribute("currentUser");
-        if (userObj instanceof UserSummaryResponse user) {
-            return "MEMBER".equalsIgnoreCase(user.role());
+        if (session != null) {
+            Object userObj = session.getAttribute("currentUser");
+            if (userObj instanceof UserSummaryResponse user) {
+                return "MEMBER".equalsIgnoreCase(user.role());
+            }
         }
         return false;
     }

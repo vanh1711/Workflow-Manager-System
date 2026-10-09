@@ -89,4 +89,27 @@ public class UserServiceImpl implements UserService {
         log.info("Quản trị viên đã cấp tài khoản mới: {} (ID: {}, Role: {})", savedUser.getUsername(), savedUser.getId(), savedUser.getRole());
         return TaskMapper.toUserSummary(savedUser);
     }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS, "Vui lòng đăng nhập để thực hiện đổi mật khẩu");
+        }
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "Mật khẩu hiện tại không chính xác");
+        }
+
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "Mật khẩu mới không được trùng với mật khẩu hiện tại");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Người dùng '{}' (ID: {}) đã đổi mật khẩu thành công", user.getUsername(), user.getId());
+    }
 }

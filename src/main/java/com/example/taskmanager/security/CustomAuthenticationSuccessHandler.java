@@ -33,6 +33,21 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             .anyMatch("ROLE_ADMIN"::equals);
 
         String contextPath = request.getContextPath();
+
+        // Đồng bộ thông tin phiên làm việc vào HttpSession để tương thích tuyệt đối mọi tầng View
+        if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            request.getSession().setAttribute("currentUserId", userDetails.getId());
+            com.example.taskmanager.dto.response.UserSummaryResponse userSummary = new com.example.taskmanager.dto.response.UserSummaryResponse(
+                userDetails.getId(),
+                userDetails.getUsername(),
+                userDetails.getFullName(),
+                userDetails.getEmail(),
+                userDetails.getRole().name(),
+                userDetails.getRole().getLabel()
+            );
+            request.getSession().setAttribute("currentUser", userSummary);
+        }
+
         if (isAdmin) {
             response.sendRedirect(contextPath + "/dashboard");
         } else {

@@ -82,4 +82,21 @@ class SecurityFilterChainIntegrationTest {
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/login?logout=true"));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/tasks khi chưa đăng nhập - Bị chuyển hướng 302 về /login")
+    void apiTasks_WhenAnonymous_ShouldRedirectToLogin() throws Exception {
+        mockMvc.perform(get("/api/v1/tasks"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
+    @WithMockUser(username = "member", roles = {"MEMBER"})
+    @DisplayName("GET /categories/new khi là MEMBER - Bị chuyển hướng vì không có quyền ADMIN")
+    void categoryNew_WhenMember_ShouldBeDenied() throws Exception {
+        mockMvc.perform(get("/categories/new"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/tasks/my-tasks?accessDenied=true"));
+    }
 }

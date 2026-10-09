@@ -22,11 +22,18 @@ public interface UserService {
 
     /**
      * Xác thực thông tin đăng nhập người dùng bằng username/email và mật khẩu thô.
+     * @deprecated Hiện tại xác thực đã được chuyển sang Spring Security 6 FormLogin.
      */
+    @Deprecated
     UserSummaryResponse authenticate(String usernameOrEmail, String rawPassword);
 
     /**
      * Quản trị viên cấp tài khoản mới cho nhân viên nội bộ (có mã hóa BCrypt).
      */
     UserSummaryResponse createUser(UserCreateRequest request);
+
+    /**
+     * Đổi mật khẩu cá nhân cho người dùng đang đăng nhập.
+     */
+    void changePassword(Long userId, String currentPassword, String newPassword);
 }

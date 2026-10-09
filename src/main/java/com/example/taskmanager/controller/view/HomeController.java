@@ -8,6 +8,7 @@ import com.example.taskmanager.service.TaskService;
 import com.example.taskmanager.dto.response.UserSummaryResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,8 +36,8 @@ public class HomeController {
      * - Member -> My Task
      */
     @GetMapping("/")
-    public String index(HttpSession session) {
-        if (isMember(session)) {
+    public String index(Authentication authentication, HttpSession session) {
+        if (isMember(authentication, session)) {
             return "redirect:/tasks/my-tasks";
         }
         return "redirect:/dashboard";
@@ -47,8 +48,8 @@ public class HomeController {
      * Thành viên không có Dashboard, tự động chuyển về /tasks/my-tasks.
      */
     @GetMapping("/dashboard")
-    public String dashboard(Model model, HttpSession session) {
-        if (isMember(session)) {
+    public String dashboard(Model model, Authentication authentication, HttpSession session) {
+        if (isMember(authentication, session)) {
             return "redirect:/tasks/my-tasks";
         }
         long todoCount = taskService.countByStatus(TaskStatus.TODO);
@@ -148,13 +149,16 @@ public class HomeController {
         return "dashboard";
     }
 
-    private boolean isMember(HttpSession session) {
-        if (session == null) {
-            return false;
+    private boolean isMember(Authentication authentication, HttpSession session) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_MEMBER".equals(a.getAuthority()));
         }
-        Object userObj = session.getAttribute("currentUser");
-        if (userObj instanceof UserSummaryResponse user) {
-            return "MEMBER".equalsIgnoreCase(user.role());
+        if (session != null) {
+            Object userObj = session.getAttribute("currentUser");
+            if (userObj instanceof UserSummaryResponse user) {
+                return "MEMBER".equalsIgnoreCase(user.role());
+            }
         }
         return false;
     }

@@ -14,10 +14,12 @@ import com.example.taskmanager.enums.TaskStatus;
 import com.example.taskmanager.service.CategoryService;
 import com.example.taskmanager.service.TaskService;
 import com.example.taskmanager.service.UserService;
+import com.example.taskmanager.security.CustomUserDetails;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -74,6 +76,7 @@ public class TaskViewController {
         @RequestParam(required = false) Long categoryId,
         @RequestParam(required = false) Long assigneeId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate anchorDate,
+        Authentication authentication,
         HttpSession session,
         Model model
     ) {
@@ -85,7 +88,7 @@ public class TaskViewController {
         model.addAttribute("selectedAssigneeId", assigneeId);
 
         // Với dải timeline lịch: Admin thấy tất cả (hoặc theo filter), Member chỉ thấy của mình
-        Long timelineAssigneeId = isMemberRole(session) ? getCurrentUserId(session) : assigneeId;
+        Long timelineAssigneeId = isMemberRole(authentication, session) ? getCurrentUserId(authentication, session) : assigneeId;
         populateTimelineModel(model, anchorDate, categoryId, timelineAssigneeId);
         populateCommonModelAttributes(model);
         populateKanbanSidePanelModel(model, columns);
@@ -102,12 +105,13 @@ public class TaskViewController {
     public String myTasks(
         @RequestParam(required = false) Long categoryId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate anchorDate,
+        Authentication authentication,
         HttpSession session,
         Model model
     ) {
-        Long currentUserId = getCurrentUserId(session);
+        Long currentUserId = getCurrentUserId(authentication, session);
 
-        String view = kanbanBoard(categoryId, currentUserId, anchorDate, session, model);
+        String view = kanbanBoard(categoryId, currentUserId, anchorDate, authentication, session, model);
         model.addAttribute("activeNav", "my-tasks");
         model.addAttribute("isMyTasksView", true);
         return view;
@@ -170,6 +174,7 @@ public class TaskViewController {
         @RequestParam(required = false) Integer month,
         @RequestParam(required = false) Long categoryId,
         @RequestParam(required = false) Long assigneeId,
+        Authentication authentication,
         HttpSession session,
         Model model
     ) {
@@ -181,8 +186,8 @@ public class TaskViewController {
         java.time.LocalDate startDate = currentYearMonth.atDay(1);
         java.time.LocalDate endDate = currentYearMonth.atEndOfMonth();
 
-        boolean isMember = isMemberRole(session);
-        Long currentUserId = getCurrentUserId(session);
+        boolean isMember = isMemberRole(authentication, session);
+        Long currentUserId = getCurrentUserId(authentication, session);
         Long effectiveAssigneeId = isMember ? currentUserId : assigneeId;
 
         TaskFilterRequest filter = TaskFilterRequest.builder()
@@ -237,8 +242,8 @@ public class TaskViewController {
      * Hiển thị form tạo mới công việc (Chỉ dành cho Admin).
      */
     @GetMapping("/new")
-    public String showCreateForm(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (isMemberRole(session)) {
+    public String showCreateForm(Model model, Authentication authentication, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới được phép tạo công việc!");
             return "redirect:/tasks";
         }
@@ -263,10 +268,11 @@ public class TaskViewController {
         @Validated(OnCreate.class) @ModelAttribute("taskRequest") TaskRequest taskRequest,
         BindingResult bindingResult,
         Model model,
+        Authentication authentication,
         HttpSession session,
         RedirectAttributes redirectAttributes
     ) {
-        if (isMemberRole(session)) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới được phép tạo công việc!");
             return "redirect:/tasks";
         }
@@ -301,8 +307,14 @@ public class TaskViewController {
      * Hiển thị form chỉnh sửa nội dung công việc (Chỉ dành cho Admin).
      */
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Long id, Model model, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (isMemberRole(session)) {
+    public String showEditForm(
+        @PathVariable Long id,
+        Model model,
+        Authentication authentication,
+        HttpSession session,
+        RedirectAttributes redirectAttributes
+    ) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới có quyền chỉnh sửa công việc!");
             return "redirect:/tasks/" + id;
         }
@@ -339,10 +351,11 @@ public class TaskViewController {
         @Validated(OnUpdate.class) @ModelAttribute("taskRequest") TaskRequest taskRequest,
         BindingResult bindingResult,
         Model model,
+        Authentication authentication,
         HttpSession session,
         RedirectAttributes redirectAttributes
     ) {
-        if (isMemberRole(session)) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới có quyền chỉnh sửa công việc!");
             return "redirect:/tasks/" + id;
         }
@@ -362,13 +375,30 @@ public class TaskViewController {
 
     /**
      * Xử lý chuyển đổi trạng thái công việc thông qua nút bấm trên trang chi tiết (Cả Admin và Member).
+     * Kiểm tra quyền sở hữu: Member chỉ được đổi trạng thái công việc được giao cho chính mình.
      */
     @PostMapping("/{id}/status")
     public String changeStatus(
         @PathVariable Long id,
         @RequestParam TaskStatus status,
+        Authentication authentication,
+        HttpSession session,
         RedirectAttributes redirectAttributes
     ) {
+        TaskResponse task = taskService.getTaskById(id);
+        boolean isMember = isMemberRole(authentication, session);
+        Long currentUserId = getCurrentUserId(authentication, session);
+
+        if (isMember) {
+            if (task.assignee() == null || !task.assignee().id().equals(currentUserId)) {
+                redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Bạn chỉ có quyền cập nhật trạng thái cho những công việc được giao cho chính bạn!"
+                );
+                return "redirect:/tasks/" + id;
+            }
+        }
+
         taskService.changeStatus(id, new TaskStatusUpdateRequest(status, null));
         redirectAttributes.addFlashAttribute("successMessage", "Chuyển trạng thái sang '" + status.getLabel() + "' thành công!");
         return "redirect:/tasks/" + id;
@@ -378,8 +408,13 @@ public class TaskViewController {
      * Xử lý xóa công việc từ giao diện web (Chỉ dành cho Admin).
      */
     @PostMapping("/{id}/delete")
-    public String deleteTask(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
-        if (isMemberRole(session)) {
+    public String deleteTask(
+        @PathVariable Long id,
+        Authentication authentication,
+        HttpSession session,
+        RedirectAttributes redirectAttributes
+    ) {
+        if (isMemberRole(authentication, session)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện chức năng này. Chỉ Quản trị viên mới có quyền xóa công việc!");
             return "redirect:/tasks";
         }
@@ -389,18 +424,26 @@ public class TaskViewController {
         return "redirect:/tasks";
     }
 
-    private boolean isMemberRole(HttpSession session) {
-        if (session == null) {
-            return false;
+    private boolean isMemberRole(Authentication authentication, HttpSession session) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_MEMBER".equals(a.getAuthority()));
         }
-        Object userObj = session.getAttribute("currentUser");
-        if (userObj instanceof UserSummaryResponse user) {
-            return "MEMBER".equalsIgnoreCase(user.role());
+        if (session != null) {
+            Object userObj = session.getAttribute("currentUser");
+            if (userObj instanceof UserSummaryResponse user) {
+                return "MEMBER".equalsIgnoreCase(user.role());
+            }
         }
         return false;
     }
 
-    private Long getCurrentUserId(HttpSession session) {
+    private Long getCurrentUserId(Authentication authentication, HttpSession session) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+                return userDetails.getId();
+            }
+        }
         if (session != null) {
             Object uid = session.getAttribute("currentUserId");
             if (uid instanceof Long) {
