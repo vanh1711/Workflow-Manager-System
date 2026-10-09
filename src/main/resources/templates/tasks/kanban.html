@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Bảng Kanban — TaskFlow</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Header & Breadcrumb / Action Bar (Theo Mẫu Ảnh 1: Homepage Design Board) -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3 pb-2 border-bottom">
+            <div>
+                <div class="text-muted small mb-1" style="font-size: 0.78rem;">
+                    <span>TaskFlow</span> <i class="bi bi-chevron-right mx-1" style="font-size: 0.65rem;"></i>
+                    <span class="badge bg-light text-dark border px-2 py-0.5">
+                        <i class="bi bi-person-workspace me-1"></i>
+                        <span th:text="${isMyTasksView} ? 'My Task' : 'Kanban Board'">Kanban Board</span>
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <h1 class="h4 fw-bold mb-0 text-main" th:text="${isMyTasksView} ? 'My Task' : 'Bảng Luồng Tác Vụ (Kanban)'">Homepage Design</h1>
+                    <!-- Stacked Team Member Avatars (Mẫu Ảnh 1) -->
+                    <div class="d-flex align-items-center ms-2">
+                        <span th:each="u, iter : ${users}" th:if="${iter.index < 3}"
+                              class="avatar-square-sm border border-2 border-white shadow-sm"
+                              style="margin-left: -6px;"
+                              th:title="${u.fullName()}"
+                              th:text="${#strings.substring(u.fullName(), 0, 1)}">A</span>
+                        <span th:if="${users != null and users.size() > 3}"
+                              class="avatar-square-sm bg-light text-muted border border-2 border-white shadow-sm"
+                              style="margin-left: -6px; font-size: 0.65rem;"
+                              th:text="'+' + (${users.size() - 3})">+2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                   th:href="@{/tasks/new}" class="btn btn-primary btn-sm px-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo Task Mới
+                </a>
+            </div>
+        </div>
+
+        <!-- TOP SECTION: Task Calendar Timeline Strip (Giữ lại tính năng Lịch theo yêu cầu) -->
+        <div class="timeline-strip-container shadow-sm mb-4">
+            <div class="timeline-strip-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-main" style="font-size: 0.95rem;">Lịch Công Việc (Task Calendar)</span>
+                    <span class="badge bg-light text-muted border px-2 py-0.5" style="font-size: 0.72rem;">
+                        <span th:if="${timelineAnchor != null}" th:text="${#temporals.format(timelineAnchor, 'MMMM yyyy')}">Tháng 10 2026</span>
+                    </span>
+                    <span th:if="${currentUser != null and currentUser.role == 'MEMBER'}"
+                          class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5" style="font-size: 0.72rem;">
+                        <i class="bi bi-person me-1"></i>Công việc của bạn
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-1.5">
+                    <a th:if="${timelinePrevAnchor != null}"
+                       th:href="@{${isMyTasksView != null and isMyTasksView ? '/tasks/my-tasks' : '/tasks/kanban'}(anchorDate=${timelinePrevAnchor}, categoryId=${selectedCategoryId}, assigneeId=${selectedAssigneeId})}"
+                       class="btn btn-outline-secondary btn-sm py-1 px-2" title="Tuần trước">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <a th:href="@{${isMyTasksView != null and isMyTasksView ? '/tasks/my-tasks' : '/tasks/kanban'}(categoryId=${selectedCategoryId}, assigneeId=${selectedAssigneeId})}"
+                       class="btn btn-outline-secondary btn-sm py-1 px-2.5" style="font-size: 0.78rem;">
+                        Hôm nay
+                    </a>
+                    <a th:if="${timelineNextAnchor != null}"
+                       th:href="@{${isMyTasksView != null and isMyTasksView ? '/tasks/my-tasks' : '/tasks/kanban'}(anchorDate=${timelineNextAnchor}, categoryId=${selectedCategoryId}, assigneeId=${selectedAssigneeId})}"
+                       class="btn btn-outline-secondary btn-sm py-1 px-2" title="Tuần sau">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="timeline-strip-body" th:if="${timelineDays != null}">
+                <div th:each="day : ${timelineDays}"
+                     class="timeline-strip-col"
+                     th:classappend="(${day.isEqual(todayDate)} ? ' today-col' : '') + (${day.dayOfWeek.value == 6 or day.dayOfWeek.value == 7} ? ' weekend-col' : '')">
+
+                    <div class="timeline-col-date-header">
+                        <span th:text="${#temporals.format(day, 'dd MMM')}">14 Feb</span>
+                    </div>
+
+                    <div class="timeline-strip-tasks" th:with="dayTasks=${timelineTasksByDate != null ? timelineTasksByDate.get(day) : null}">
+                        <div th:if="${dayTasks != null and !dayTasks.empty}">
+                            <div th:each="t : ${dayTasks}" class="mb-1">
+                                <a th:href="@{/tasks/{id}(id=${t.id})}"
+                                   class="timeline-pill"
+                                   th:classappend="${day.isEqual(todayDate)} ? 'timeline-pill-today' : 'timeline-pill-normal'"
+                                   th:title="${t.title + ' (' + t.status.label + ')'}">
+                                    <span class="pill-date" th:text="${#temporals.format(t.dueDate, 'dd MMM')}">14 Feb</span>
+                                    <span class="pill-title text-truncate" th:text="${t.title}">Task Title</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER BAR & VIEW SWITCHER -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <h2 class="h6 fw-bold mb-0 text-main" style="font-size: 1.05rem;">All Tasks</h2>
+
+                <form th:action="@{${isMyTasksView != null and isMyTasksView ? '/tasks/my-tasks' : '/tasks/kanban'}}" method="get" class="d-flex align-items-center gap-2">
+                    <input type="hidden" name="anchorDate" th:if="${timelineAnchor != null}" th:value="${timelineAnchor}" />
+
+                    <select name="categoryId" class="form-select form-select-sm" style="max-width: 190px;" onchange="this.form.submit()">
+                        <option value="">-- Tất cả dự án --</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id()}"
+                                th:text="${cat.name()}"
+                                th:selected="${selectedCategoryId != null and selectedCategoryId == cat.id()}">
+                        </option>
+                    </select>
+
+                    <select name="assigneeId" class="form-select form-select-sm" style="max-width: 170px;" onchange="this.form.submit()">
+                        <option value="">-- Người phụ trách --</option>
+                        <option th:each="u : ${users}"
+                                th:value="${u.id()}"
+                                th:text="${u.fullName()}"
+                                th:selected="${selectedAssigneeId != null and selectedAssigneeId == u.id()}">
+                        </option>
+                    </select>
+                </form>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <div class="view-mode-tabs">
+                    <a th:href="@{/tasks(categoryId=${selectedCategoryId}, assigneeId=${selectedAssigneeId})}" class="view-mode-tab">
+                        <i class="bi bi-grid-3x3"></i>
+                        <span>Spreadsheet</span>
+                    </a>
+                    <a th:href="@{/tasks/calendar(categoryId=${selectedCategoryId}, assigneeId=${selectedAssigneeId})}" class="view-mode-tab">
+                        <i class="bi bi-bar-chart-steps"></i>
+                        <span>Timeline</span>
+                    </a>
+                    <a th:href="@{/tasks/kanban(categoryId=${selectedCategoryId}, assigneeId=${selectedAssigneeId})}" class="view-mode-tab active">
+                        <i class="bi bi-kanban"></i>
+                        <span>Kanban</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- KANBAN MASTER LAYOUT (Theo Mẫu Ảnh 1: 4 Cột Trái + Bảng Phụ Task Progress & Recent Activity Bên Phải) -->
+        <div class="kanban-two-column-layout">
+            <!-- LEFT AREA: 4 Kanban Columns -->
+            <div class="kanban-columns-container">
+                <div th:each="col : ${columns}"
+                     class="kanban-col-wrapper kanban-column"
+                     th:attr="data-status=${col.status().name()}">
+
+                    <!-- Column Header (Title + Three dots + Count badge) -->
+                    <div class="kanban-col-title-bar">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="d-inline-block rounded-circle"
+                                  th:classappend="${col.status().name() == 'TODO' ? 'bg-secondary' : (col.status().name() == 'IN_PROGRESS' ? 'bg-primary' : (col.status().name() == 'REVIEW' ? 'bg-warning' : 'bg-success'))}"
+                                  style="width: 8px; height: 8px;"></span>
+                            <span class="kanban-col-heading"
+                                  th:text="${col.status().name() == 'TODO' ? 'Task Ready' : (col.status().name() == 'IN_PROGRESS' ? 'On Progress' : (col.status().name() == 'REVIEW' ? 'Needs Review' : 'Done'))}">
+                                Task Ready
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="kanban-count-badge" th:text="${col.count()}">0</span>
+                            <button class="btn btn-ghost btn-sm p-0 text-muted" title="Tùy chọn cột">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards Container (Drop Zone for Drag & Drop) -->
+                    <div class="kanban-drop-zone kanban-cards-container">
+                        <div th:each="task : ${col.tasks()}"
+                             class="kanban-card kanban-card-dribbble"
+                             draggable="true"
+                             th:attr="data-task-id=${task.id()}, data-current-status=${task.status().name()}, data-version=${task.version()}">
+
+                            <!-- Top: Category Pastel Pill Badge & Actions (Ảnh 1) -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span th:if="${task.category() != null}"
+                                      class="pill-category-badge"
+                                      th:classappend="${task.category().id() % 3 == 0 ? 'pill-cat-pink' : (task.category().id() % 3 == 1 ? 'pill-cat-blue' : 'pill-cat-green')}"
+                                      th:text="${task.category().name()}">Copywriting</span>
+                                <span th:unless="${task.category() != null}"
+                                      class="pill-category-badge pill-cat-blue">Chung</span>
+
+                                <div class="d-flex align-items-center gap-1">
+                                    <a th:if="${task.status().name() != 'DONE'}"
+                                       th:href="@{/tasks/{id}/edit(id=${task.id()})}"
+                                       class="text-muted text-decoration-none"
+                                       title="Chỉnh sửa">
+                                        <i class="bi bi-pencil" style="font-size: 0.72rem;"></i>
+                                    </a>
+                                    <a th:href="@{/tasks/{id}(id=${task.id()})}" class="text-muted text-decoration-none" title="Chi tiết">
+                                        <i class="bi bi-three-dots" style="font-size: 0.72rem;"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Middle: Task Title (Ảnh 1) -->
+                            <div class="mb-2.5">
+                                <a th:href="@{/tasks/{id}(id=${task.id()})}"
+                                   class="text-decoration-none text-main fw-bold d-block"
+                                   style="font-size: 0.88rem; line-height: 1.35;"
+                                   th:text="${task.title()}"
+                                   th:title="${task.title()}">Konsep hero title yang menarik</a>
+                            </div>
+
+                            <!-- Bottom Meta Row: Date, Comments, Paperclip & Circular Assignee Avatar (Ảnh 1) -->
+                            <div class="d-flex align-items-center justify-content-between pt-1 border-top mt-2" style="font-size: 0.75rem;">
+                                <div class="d-flex align-items-center gap-2 text-muted">
+                                    <!-- Due Date -->
+                                    <span class="d-flex align-items-center gap-1"
+                                          th:classappend="${task.overdue} ? 'text-danger fw-bold' : ''">
+                                        <i class="bi bi-flag"></i>
+                                        <span th:text="${#temporals.format(task.dueDate(), 'MMM d')}">Nov 24</span>
+                                    </span>
+                                    <!-- Comments count mockup -->
+                                    <span class="d-flex align-items-center gap-1">
+                                        <i class="bi bi-chat-square-text"></i>
+                                        <span th:text="${task.priority().name() == 'HIGH' ? '3' : '1'}">2</span>
+                                    </span>
+                                    <!-- Attachment count mockup -->
+                                    <span class="d-flex align-items-center gap-1">
+                                        <i class="bi bi-paperclip"></i>
+                                        <span th:text="${task.id() % 5 + 1}">5</span>
+                                    </span>
+                                </div>
+
+                                <!-- Assignee Circular Avatar (Ảnh 1) -->
+                                <div th:if="${task.assignee() != null}">
+                                    <div class="avatar-square-sm shadow-sm"
+                                         th:title="${task.assignee().fullName()}"
+                                         th:text="${#strings.substring(task.assignee().fullName(), 0, 1)}">S</div>
+                                </div>
+                                <div th:unless="${task.assignee() != null}">
+                                    <span class="text-muted small fst-italic" style="font-size: 0.68rem;">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Card Button (Ảnh 1) -->
+                    <div class="p-2 pt-1 text-center">
+                        <a th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                           th:href="@{/tasks/new(status=${col.status().name()})}"
+                           class="btn btn-ghost btn-sm text-muted w-100 py-1"
+                           style="font-size: 0.8rem;">
+                            <i class="bi bi-plus-lg me-1"></i> Add Card
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT AREA: Kanban Side Panel (Theo Mẫu Ảnh 1: Task Progress & Recent Activity) -->
+            <div class="kanban-side-panel-card">
+                <!-- 1. Task Progress Section (Ảnh 1) -->
+                <div class="mb-4">
+                    <div class="side-panel-section-title d-flex align-items-center justify-content-between">
+                        <span>Task Progress</span>
+                        <i class="bi bi-sliders text-muted small"></i>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+                        <div th:each="prog : ${kanbanCategoryProgress}" class="progress-item-block">
+                            <div class="progress-item-meta">
+                                <span class="progress-stat-name" th:text="${prog.name}">Copywriting</span>
+                                <span class="progress-stat-ratio" th:text="${prog.doneCount} + '/' + ${prog.totalCount}">3/8</span>
+                            </div>
+                            <div class="progress-track-bg">
+                                <div class="progress-track-fill"
+                                     th:style="'width: ' + ${prog.percentage} + '%; background-color: ' + ${prog.colorHex} + ';'"></div>
+                            </div>
+                        </div>
+
+                        <!-- Fallback nếu chưa có dự án nào -->
+                        <div th:if="${kanbanCategoryProgress == null or kanbanCategoryProgress.empty}" class="text-muted small text-center py-2">
+                            Chưa có dữ liệu tiến độ.
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3" style="border-color: rgba(251, 207, 232, 0.8);">
+
+                <!-- 2. Recent Activity Section (Ảnh 1: Andrea uploaded documents, Karen comments...) -->
+                <div>
+                    <div class="side-panel-section-title d-flex align-items-center justify-content-between">
+                        <span>Recent Activity</span>
+                        <i class="bi bi-clock-history text-muted small"></i>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+                        <div th:each="act, iter : ${kanbanRecentActivities}" class="activity-row-item">
+                            <!-- Circular Pastel Icon Badge (Ảnh 1) -->
+                            <div class="activity-icon-badge"
+                                 th:classappend="${iter.index % 4 == 0 ? 'activity-icon-orange' : (iter.index % 4 == 1 ? 'activity-icon-green' : (iter.index % 4 == 2 ? 'activity-icon-purple' : 'activity-icon-blue'))}">
+                                <i th:if="${iter.index % 4 == 0}" class="bi bi-paperclip"></i>
+                                <i th:if="${iter.index % 4 == 1}" class="bi bi-chat-dots"></i>
+                                <i th:if="${iter.index % 4 == 2}" class="bi bi-pencil"></i>
+                                <i th:if="${iter.index % 4 == 3}" class="bi bi-check-lg"></i>
+                            </div>
+
+                            <div class="activity-feed-content">
+                                <div class="activity-item-text">
+                                    <strong th:text="${act.assignee() != null ? act.assignee().fullName() : 'Andrea'}">Andrea</strong>
+                                    <span th:text="${act.status().name() == 'DONE' ? 'hoàn tất nhiệm vụ' : 'cập nhật công việc'}">leave some comments</span>
+                                    <a th:href="@{/tasks/{id}(id=${act.id()})}" class="text-decoration-none fw-semibold text-main d-block text-truncate" style="max-width: 190px;" th:text="${act.title()}">Title</a>
+                                </div>
+                                <div class="activity-item-time" th:text="${act.dueDate() != null ? #temporals.format(act.dueDate(), 'MMM d') : 'Hôm nay'}">Aug 10</div>
+                            </div>
+                        </div>
+
+                        <!-- Fallback nếu chưa có hoạt động -->
+                        <div th:if="${kanbanRecentActivities == null or kanbanRecentActivities.empty}" class="text-muted small text-center py-2">
+                            Chưa có hoạt động gần đây.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Kanban Drag & Drop Script -->
+        <script th:src="@{/js/kanban.js}"></script>
+    </div>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title th:text="${isEdit ? 'Chỉnh Sửa Danh Mục #' + categoryId : 'Tạo Danh Mục Mới'} + ' — TaskFlow'">Biểu Mẫu Danh Mục</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+                <h1 class="h5 fw-bold mb-0 text-main" th:text="${isEdit ? 'Chỉnh Sửa Danh Mục #' + categoryId : 'Tạo Danh Mục Mới'}">
+                    Tạo Danh Mục Mới
+                </h1>
+                <p class="text-muted small mb-0">Cấu hình phân hệ dự án và màu sắc nhận diện</p>
+            </div>
+            <div>
+                <a th:href="@{/categories}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg me-1"></i> Đóng
+                </a>
+            </div>
+        </div>
+
+        <!-- Form Card (Sharp Property-List) -->
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="app-card p-4">
+                    <form th:action="${isEdit ? '/categories/' + categoryId : '/categories'}"
+                          th:object="${categoryRequest}"
+                          method="post"
+                          novalidate>
+
+                        <div class="property-table">
+                            <!-- Name Row -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-fonts text-muted"></i>
+                                    <span>Tên danh mục <span class="text-danger">*</span></span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <input type="text"
+                                           id="name"
+                                           th:field="*{name}"
+                                           class="form-control form-control-sm w-100"
+                                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                           placeholder="Ví dụ: Core Banking Migration"
+                                           maxlength="50"
+                                           required />
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                                        Tên danh mục không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Description Row -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label align-self-start pt-1">
+                                    <i class="bi bi-file-text text-muted"></i>
+                                    <span>Mô tả</span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <textarea id="description"
+                                              th:field="*{description}"
+                                              class="form-control form-control-sm w-100"
+                                              th:classappend="${#fields.hasErrors('description')} ? 'is-invalid'"
+                                              rows="3"
+                                              placeholder="Mô tả phạm vi hoặc phân hệ dự án..."></textarea>
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+                                        Mô tả không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Color Hex Picker Row -->
+                            <div class="property-row py-2">
+                                <div class="property-label">
+                                    <i class="bi bi-palette text-muted"></i>
+                                    <span>Mã màu Hex <span class="text-danger">*</span></span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <div class="input-group input-group-sm" style="max-width: 220px;">
+                                        <input type="color"
+                                               class="form-control form-control-color"
+                                               id="colorPicker"
+                                               style="width: 42px;"
+                                               th:value="*{colorHex != null ? colorHex : '#4F46E5'}"
+                                               oninput="document.getElementById('colorHex').value = this.value">
+                                        <input type="text"
+                                               id="colorHex"
+                                               th:field="*{colorHex}"
+                                               class="form-control"
+                                               th:classappend="${#fields.hasErrors('colorHex')} ? 'is-invalid'"
+                                               placeholder="#4F46E5"
+                                               pattern="^#([A-Fa-f0-9]{6})$"
+                                               oninput="if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) document.getElementById('colorPicker').value = this.value"
+                                               required />
+                                    </div>
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('colorHex')}" th:errors="*{colorHex}">
+                                        Mã màu phải là định dạng #RRGGBB
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex align-items-center justify-content-end gap-2 pt-4 mt-3 border-top">
+                            <a th:href="@{/categories}" class="btn btn-outline-secondary px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <span th:text="${isEdit ? 'Lưu thay đổi' : 'Lưu danh mục'}">Lưu</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

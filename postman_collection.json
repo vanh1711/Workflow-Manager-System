@@ -1,0 +1,244 @@
+{
+	"info": {
+		"_postman_id": "a5e8f49a-3f1a-4c28-98e3-TaskWorkflowAPI",
+		"name": "Task & Workflow Management System API",
+		"description": "Bộ sưu tập RESTful APIs đầy đủ cho hệ thống Task & Workflow Management System (Spring Boot 3.x)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Tasks",
+			"item": [
+				{
+					"name": "1. Lấy danh sách Tasks (Lọc & Phân trang)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks?keyword=&status=&priority=&categoryId=&page=0&size=10&sortBy=createdAt&sortDirection=desc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks"],
+							"query": [
+								{"key": "keyword", "value": ""},
+								{"key": "status", "value": ""},
+								{"key": "priority", "value": ""},
+								{"key": "categoryId", "value": ""},
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "10"},
+								{"key": "sortBy", "value": "createdAt"},
+								{"key": "sortDirection", "value": "desc"}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Lấy dữ liệu bảng Kanban (4 cột)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks/kanban?categoryId=&assigneeId=",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks", "kanban"],
+							"query": [
+								{"key": "categoryId", "value": ""},
+								{"key": "assigneeId", "value": ""}
+							]
+						}
+					}
+				},
+				{
+					"name": "3. Lấy chi tiết Task theo ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks", "1"]
+						}
+					}
+				},
+				{
+					"name": "4. Tạo mới Task (Status luôn = TODO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Xây dựng module thanh toán Napas\",\n  \"description\": \"Tích hợp API kết nối cổng thanh toán Napas 247\",\n  \"dueDate\": \"2026-10-15\",\n  \"priority\": \"HIGH\",\n  \"categoryId\": 1,\n  \"assigneeId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks"]
+						}
+					}
+				},
+				{
+					"name": "5. Cập nhật Task (PUT)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Xây dựng module thanh toán Napas (Cập nhật)\",\n  \"description\": \"Bổ sung xử lý checksum và đối soát giao dịch\",\n  \"dueDate\": \"2026-10-16\",\n  \"priority\": \"HIGH\",\n  \"categoryId\": 1,\n  \"assigneeId\": 1,\n  \"version\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks", "1"]
+						}
+					}
+				},
+				{
+					"name": "6. Chuyển đổi trạng thái Task (PATCH Status)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"version\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks/1/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks", "1", "status"]
+						}
+					}
+				},
+				{
+					"name": "7. Xóa Task (DELETE)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tasks/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "tasks", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "1. Lấy toàn bộ danh mục",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories"]
+						}
+					}
+				},
+				{
+					"name": "2. Lấy chi tiết danh mục",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1"]
+						}
+					}
+				},
+				{
+					"name": "3. Tạo danh mục mới",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Chuyển mạch tài chính\",\n  \"description\": \"Phân hệ xử lý lệnh chuyển tiền liên ngân hàng\",\n  \"colorHex\": \"#4F46E5\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories"]
+						}
+					}
+				},
+				{
+					"name": "4. Cập nhật danh mục",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Chuyển mạch tài chính (Core)\",\n  \"description\": \"Phân hệ giao dịch chuyển khoản tốc độ cao\",\n  \"colorHex\": \"#10B981\",\n  \"version\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1"]
+						}
+					}
+				},
+				{
+					"name": "5. Xóa danh mục (Bị chặn nếu có task)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "1. Lấy danh sách toàn bộ User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"]
+						}
+					}
+				},
+				{
+					"name": "2. Lấy chi tiết User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "1"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

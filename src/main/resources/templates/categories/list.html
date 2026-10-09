@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Danh Mục &amp; Dự Án — TaskFlow</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Header -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+            <div>
+                <h1 class="h5 fw-bold mb-0 text-main">Danh Mục &amp; Phân Hệ Dự Án</h1>
+                <p class="text-muted small mb-0">Quản lý các nhóm dự án và mã màu nhận diện thương hiệu</p>
+            </div>
+            <div th:if="${currentUser == null or currentUser.role == 'ADMIN'}">
+                <a th:href="@{/categories/new}" class="btn btn-primary btn-sm px-3">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo Danh mục mới
+                </a>
+            </div>
+        </div>
+
+        <!-- Categories Table Card -->
+        <div class="app-card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3" style="width: 80px;">ID</th>
+                            <th style="width: 250px;">Tên Danh mục</th>
+                            <th>Mô tả phạm vi</th>
+                            <th style="width: 140px;">Màu nhận diện</th>
+                            <th th:if="${currentUser == null or currentUser.role == 'ADMIN'}" class="text-end pe-3" style="width: 130px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Empty State -->
+                        <tr th:if="${categories.empty}">
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-folder-x fs-1 d-block mb-2"></i>
+                                    <p class="mb-2">Chưa có danh mục nào được khởi tạo</p>
+                                    <a th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                                       th:href="@{/categories/new}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus-lg me-1"></i> Tạo danh mục đầu tiên
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Row Item -->
+                        <tr th:each="cat : ${categories}">
+                            <td class="ps-3 text-muted small fw-mono" th:text="'#' + ${cat.id()}">#1</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="d-inline-block"
+                                          th:style="'width: 12px; height: 12px; background-color: ' + ${cat.colorHex()}"></span>
+                                    <span class="fw-bold text-main" th:text="${cat.name()}">Tên danh mục</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="small text-muted"
+                                      th:text="${cat.description() != null and !cat.description().isBlank() ? cat.description() : '—'}">Mô tả</span>
+                            </td>
+                            <td>
+                                <code class="small px-2 py-1 bg-light border text-main" th:text="${cat.colorHex()}">#4F46E5</code>
+                            </td>
+                            <td th:if="${currentUser == null or currentUser.role == 'ADMIN'}" class="text-end pe-3">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <a th:href="@{/categories/{id}/edit(id=${cat.id()})}"
+                                       class="btn btn-sm btn-ghost text-primary"
+                                       title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+
+                                    <form th:action="@{/categories/{id}/delete(id=${cat.id()})}"
+                                          method="post"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa danh mục này không? Lưu ý: Không thể xóa danh mục nếu đang có công việc liên kết.');">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-ghost text-danger"
+                                                title="Xóa danh mục">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

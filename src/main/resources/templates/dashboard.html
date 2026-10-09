@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Bảng Điều Khiển — TaskFlow</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Dashboard Top Header (Theo Mẫu Ảnh 2: Cybersecurity Threat Dashboard) -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+            <div>
+                <h1 class="h4 fw-bold mb-1 text-main">Bảng Điều Khiển Tổng Quan (Dashboard)</h1>
+                <p class="text-muted small mb-0">Hệ thống theo dõi tiến độ, hiệu suất và phân bổ vòng đời tác vụ dự án &bull; FY2026 Q4</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a th:href="@{/tasks/kanban}" class="btn btn-outline-secondary btn-sm px-3">
+                    <i class="bi bi-kanban me-1"></i> Bảng Kanban
+                </a>
+                <a th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                   th:href="@{/tasks/new}" class="btn btn-primary btn-sm px-3">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo Task
+                </a>
+            </div>
+        </div>
+
+        <!-- 5 KPI Summary Cards (Theo Mẫu Ảnh 2) -->
+        <div class="row g-3 mb-4">
+            <!-- 1. Total Tasks -->
+            <div class="col-sm-6 col-xl">
+                <div class="app-card p-3 h-100">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span class="text-uppercase fw-semibold" style="letter-spacing: 0.04em; font-size: 0.72rem;">Tổng công việc</span>
+                        <div class="activity-icon-badge" style="background-color: #eff6ff; color: #2563eb; width: 24px; height: 24px;">
+                            <i class="bi bi-collection" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <div class="h3 fw-bold text-main mb-0" th:text="${totalTasks}">28</div>
+                        <span class="badge bg-primary-subtle text-primary" style="font-size: 0.72rem;">&#9650; 100% Tất cả</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Overdue / Critical -->
+            <div class="col-sm-6 col-xl">
+                <div class="app-card p-3 h-100">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span class="text-uppercase fw-semibold text-danger" style="letter-spacing: 0.04em; font-size: 0.72rem;">Quá hạn chót</span>
+                        <div class="activity-icon-badge" style="background-color: #fee2e2; color: #b91c1c; width: 24px; height: 24px;">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <div class="h3 fw-bold text-danger mb-0" th:text="${overdueCount}">0</div>
+                        <span class="badge bg-danger-subtle text-danger" style="font-size: 0.72rem;">Cần xử lý</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. In Progress -->
+            <div class="col-sm-6 col-xl">
+                <div class="app-card p-3 h-100">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span class="text-uppercase fw-semibold text-primary" style="letter-spacing: 0.04em; font-size: 0.72rem;">Đang làm việc</span>
+                        <div class="activity-icon-badge" style="background-color: #eff6ff; color: #2563eb; width: 24px; height: 24px;">
+                            <i class="bi bi-play-circle" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <div class="h3 fw-bold text-primary mb-0" th:text="${inProgressCount}">7</div>
+                        <span class="badge bg-primary-subtle text-primary" style="font-size: 0.72rem;">In Progress</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Completion Rate -->
+            <div class="col-sm-6 col-xl">
+                <div class="app-card p-3 h-100">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span class="text-uppercase fw-semibold text-success" style="letter-spacing: 0.04em; font-size: 0.72rem;">Tỉ lệ hoàn thành</span>
+                        <div class="activity-icon-badge" style="background-color: #ecfdf5; color: #059669; width: 24px; height: 24px;">
+                            <i class="bi bi-check-circle" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <div class="h3 fw-bold text-success mb-0" th:text="${completionRate} + '%'">25%</div>
+                        <span class="badge bg-success-subtle text-success" style="font-size: 0.72rem;">Mục tiêu đạt</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Completed Tasks -->
+            <div class="col-sm-6 col-xl">
+                <div class="app-card p-3 h-100">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span class="text-uppercase fw-semibold text-success" style="letter-spacing: 0.04em; font-size: 0.72rem;">Đã hoàn thành</span>
+                        <div class="activity-icon-badge" style="background-color: #ecfdf5; color: #059669; width: 24px; height: 24px;">
+                            <i class="bi bi-trophy" style="font-size: 0.75rem;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <div class="h3 fw-bold text-success mb-0" th:text="${doneCount}">7</div>
+                        <span class="badge bg-success-subtle text-success" style="font-size: 0.72rem;">Done</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 Analytics Cards Row (Theo Mẫu Ảnh 2: Donut Chart, Category Bar, Resolution Funnel) -->
+        <div class="row g-3 mb-4">
+            <!-- 1. Donut Chart: Severity / Status Distribution (Chính xác theo Mẫu Ảnh 2) -->
+            <div class="col-lg-4">
+                <div class="app-card p-3 h-100 d-flex flex-direction-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <h2 class="h6 fw-bold mb-0 text-main">Phân Bổ Vòng Đời Tác Vụ</h2>
+                            <i class="bi bi-pie-chart text-muted"></i>
+                        </div>
+                        <p class="text-muted small mb-3" style="font-size: 0.78rem;">
+                            Breakdown of <strong th:text="${totalTasks}">28</strong> tasks in Q4 2026
+                        </p>
+
+                        <!-- Donut Chart & Legend Flex Layout (Ảnh 2) -->
+                        <div class="d-flex flex-column flex-sm-row align-items-center gap-3 my-2">
+                            <!-- Left: Donut Ring with absolute center number -->
+                            <div class="donut-box-wrapper">
+                                <canvas id="taskStatusDonutChart" width="160" height="160"></canvas>
+                                <div class="donut-inner-center">
+                                    <div class="donut-big-num" th:text="${totalTasks}">28</div>
+                                    <div class="donut-sub-text">Total Tasks</div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Detailed Legend List with dots, counts and percentages (Ảnh 2) -->
+                            <div class="donut-legend-list">
+                                <div class="donut-legend-item">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="donut-legend-dot" style="background-color: #db2777;"></span>
+                                        <span class="fw-semibold text-main">Chờ làm (TODO)</span>
+                                    </div>
+                                    <span class="fw-bold text-muted small" th:text="${todoCount} + ' (' + ${todoPercent} + '%)'">7 (25%)</span>
+                                </div>
+
+                                <div class="donut-legend-item">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="donut-legend-dot" style="background-color: #2563eb;"></span>
+                                        <span class="fw-semibold text-main">Đang làm</span>
+                                    </div>
+                                    <span class="fw-bold text-muted small" th:text="${inProgressCount} + ' (' + ${inProgressPercent} + '%)'">7 (25%)</span>
+                                </div>
+
+                                <div class="donut-legend-item">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="donut-legend-dot" style="background-color: #ca8a04;"></span>
+                                        <span class="fw-semibold text-main">Chờ duyệt</span>
+                                    </div>
+                                    <span class="fw-bold text-muted small" th:text="${reviewCount} + ' (' + ${reviewPercent} + '%)'">7 (25%)</span>
+                                </div>
+
+                                <div class="donut-legend-item">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="donut-legend-dot" style="background-color: #059669;"></span>
+                                        <span class="fw-semibold text-main">Hoàn thành</span>
+                                    </div>
+                                    <span class="fw-bold text-muted small" th:text="${doneCount} + ' (' + ${donePercent} + '%)'">7 (25%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-top mt-3">
+                        <a th:href="@{/tasks/kanban}" class="text-decoration-none small text-primary fw-semibold">
+                            <span>Xem chi tiết trên Bảng Kanban</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Category Distribution (Phân bổ theo Phân hệ / Dự án theo Ảnh 2: Incidents by Category) -->
+            <div class="col-lg-4">
+                <div class="app-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <h2 class="h6 fw-bold mb-0 text-main">Phân Bổ Theo Phân Hệ Dự Án</h2>
+                            <i class="bi bi-bar-chart-line text-muted"></i>
+                        </div>
+                        <p class="text-muted small mb-3" style="font-size: 0.78rem;">
+                            Tỷ trọng khối lượng công việc phân bổ giữa các mảng chuyên môn
+                        </p>
+
+                        <!-- Category bars -->
+                        <div class="d-flex flex-column gap-2.5 my-2">
+                            <div th:each="cat : ${categoryStats}" class="p-2 border rounded-2" style="background-color: #fafbfc;">
+                                <div class="d-flex align-items-center justify-content-between mb-1" style="font-size: 0.82rem;">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <span class="d-inline-block rounded-circle"
+                                              style="width: 8px; height: 8px;"
+                                              th:style="|background-color: ${cat.colorHex};|"></span>
+                                        <span class="fw-semibold text-main" th:text="${cat.name}">Phân hệ API</span>
+                                    </div>
+                                    <span class="text-muted fw-bold" th:text="${cat.taskCount} + ' task'">7 task</span>
+                                </div>
+                                <div class="progress" style="height: 6px; background-color: #f1f5f9;">
+                                    <div class="progress-bar"
+                                         role="progressbar"
+                                         th:style="|width: ${cat.percentage}%; background-color: ${cat.colorHex};|"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-top mt-3">
+                        <a th:href="@{/categories}" class="text-decoration-none small text-primary fw-semibold">
+                            <span>Quản lý danh mục dự án</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Resolution Funnel (Theo Mẫu Ảnh 2: Resolution Funnel) -->
+            <div class="col-lg-4">
+                <div class="app-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <h2 class="h6 fw-bold mb-0 text-main">Resolution Funnel (Phễu Tác Vụ)</h2>
+                            <i class="bi bi-funnel text-muted"></i>
+                        </div>
+                        <p class="text-muted small mb-3" style="font-size: 0.78rem;">
+                            Quy trình triển khai tác vụ từ tiếp nhận tới nghiệm thu hoàn tất
+                        </p>
+
+                        <!-- 4-Stage Funnel Bars (Ảnh 2) -->
+                        <div class="d-flex flex-column gap-2 my-2">
+                            <!-- Stage 1: Tiếp nhận -->
+                            <div class="funnel-step-bar funnel-stage-1"
+                                 th:style="|width: ${funnelStage1Pct}%; background-color: #4f46e5 !important;|">
+                                <span>1. Tiếp nhận (TODO)</span>
+                                <span th:text="${totalTasks} + ' (100%)'">28 (100%)</span>
+                            </div>
+
+                            <!-- Stage 2: Triển khai -->
+                            <div class="funnel-step-bar funnel-stage-2"
+                                 th:style="|width: ${funnelStage2Pct}%; background-color: #2563eb !important;|">
+                                <span>2. Đang triển khai (IN_PROGRESS)</span>
+                                <span th:text="${totalTasks - todoCount} + ' task'">21 task</span>
+                            </div>
+
+                            <!-- Stage 3: Kiểm duyệt (REVIEW) -->
+                            <div class="funnel-step-bar funnel-stage-3"
+                                 th:style="|width: ${funnelStage3Pct}%; background-color: #f59e0b !important;|">
+                                <span>3. Chờ nghiệm thu (REVIEW)</span>
+                                <span th:text="${doneCount + reviewCount} + ' task'">14 task</span>
+                            </div>
+
+                            <!-- Stage 4: Hoàn thành (DONE) -->
+                            <div class="funnel-step-bar funnel-stage-4"
+                                 th:style="|width: ${funnelStage4Pct}%; background-color: #10b981 !important;|">
+                                <span>4. Đã hoàn thành (DONE)</span>
+                                <span th:text="${doneCount} + ' (' + ${completionRate} + '%)'">7 (25%)</span>
+                            </div>
+                        </div>
+
+                        <!-- Efficiency Badge -->
+                        <div class="d-flex align-items-center justify-content-between p-2 mt-2 bg-light border rounded-2" style="font-size: 0.8rem;">
+                            <span class="text-muted fw-semibold">Hiệu suất bàn giao tổng thể:</span>
+                            <span class="badge bg-success text-white" th:text="${completionRate} + '% — Đạt chuẩn'">25% — Đạt chuẩn</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-top mt-3">
+                        <a th:href="@{/tasks/kanban}" class="text-decoration-none small text-primary fw-semibold">
+                            <span>Theo dõi luồng xử lý Kanban</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Top Tasks Table & Real-Time Feed (Theo Mẫu Ảnh 2: Top Attack Vectors Analysis & Real-Time Threat Feed) -->
+        <div class="row g-3">
+            <!-- Left: Top Tasks Table (Top Attack Vectors Analysis) -->
+            <div class="col-lg-8">
+                <div class="app-card h-100">
+                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-bold text-main" style="font-size: 0.95rem;">Danh Sách Tác Vụ Trọng Tâm &amp; Tiến Độ</div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">Các công việc mới nhất và đang thực thi trong toàn hệ thống</div>
+                        </div>
+                        <a th:href="@{/tasks}" class="btn btn-outline-secondary btn-sm" style="font-size: 0.78rem;">
+                            Xem tất cả
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" style="font-size: 0.84rem;">
+                            <thead>
+                                <tr>
+                                    <th>CÔNG VIỆC</th>
+                                    <th>PHÂN HỆ</th>
+                                    <th>ĐỘ ƯU TIÊN</th>
+                                    <th>NGƯỜI PHỤ TRÁCH</th>
+                                    <th>TRẠNG THÁI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${topTasks == null or topTasks.empty}">
+                                    <td colspan="5" class="text-center py-4 text-muted">Chưa có công việc nào.</td>
+                                </tr>
+                                <tr th:each="t : ${topTasks}">
+                                    <td>
+                                        <a th:href="@{/tasks/{id}(id=${t.id()})}"
+                                           class="text-decoration-none text-main fw-semibold d-block text-truncate"
+                                           style="max-width: 240px;"
+                                           th:text="${t.title()}"
+                                           th:title="${t.title()}">Tiêu đề</a>
+                                    </td>
+                                    <td>
+                                        <span th:if="${t.category() != null}" class="badge bg-light text-dark border" th:text="${t.category().name()}">Phân hệ</span>
+                                        <span th:unless="${t.category() != null}" class="text-muted small">—</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-custom"
+                                              th:classappend="${t.priority().name() == 'HIGH' ? 'priority-badge-high' : (t.priority().name() == 'MEDIUM' ? 'priority-badge-medium' : 'priority-badge-low')}"
+                                              th:text="${t.priority().label}">Ưu tiên</span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${t.assignee() != null}" class="d-flex align-items-center gap-1.5">
+                                            <div class="avatar-square-sm" th:text="${#strings.substring(t.assignee().fullName(), 0, 1)}">A</div>
+                                            <span class="text-muted text-truncate" style="max-width: 90px;" th:text="${t.assignee().fullName()}">Tên</span>
+                                        </div>
+                                        <span th:unless="${t.assignee() != null}" class="text-muted small fst-italic">Chưa gán</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-custom"
+                                              th:classappend="${t.status().name() == 'DONE' ? 'badge-done' : (t.status().name() == 'IN_PROGRESS' ? 'badge-in-progress' : (t.status().name() == 'REVIEW' ? 'badge-review' : 'badge-todo'))}"
+                                              th:text="${t.status().label}">Trạng thái</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Real-Time Activity Feed (Theo Mẫu Ảnh 2: Real-Time Threat Feed) -->
+            <div class="col-lg-4">
+                <div class="app-card h-100 p-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1 pb-2 border-bottom">
+                            <div>
+                                <div class="fw-bold text-main" style="font-size: 0.95rem;">Dòng Hoạt Động Thời Gian Thực</div>
+                                <div class="text-muted small" style="font-size: 0.76rem;">Nhật ký tác vụ vừa hoàn thành &amp; đang xử lý</div>
+                            </div>
+                            <span class="badge bg-success-subtle text-success small">&#9679; Live</span>
+                        </div>
+
+                        <!-- Feed Items List -->
+                        <div class="d-flex flex-column gap-3 mt-3">
+                            <!-- Hoàn thành -->
+                            <div th:each="item : ${recentCompletedTasks}" class="d-flex align-items-start gap-2.5">
+                                <div class="activity-icon-badge" style="background-color: #10b981; width: 28px; height: 28px;">
+                                    <i class="bi bi-check2" style="font-size: 0.85rem;"></i>
+                                </div>
+                                <div class="flex-grow-1" style="font-size: 0.82rem; line-height: 1.35;">
+                                    <div>
+                                        <span class="fw-bold text-main" th:text="${item.assignee() != null ? item.assignee().fullName() : 'Hệ thống'}">Tên</span>
+                                        <span class="text-muted">đã hoàn thành</span>
+                                        <a th:href="@{/tasks/{id}(id=${item.id()})}" class="text-decoration-none fw-semibold text-main text-truncate d-inline-block" style="max-width: 170px; vertical-align: bottom;" th:text="${item.title()}">Task</a>
+                                    </div>
+                                    <div class="text-light small mt-0.5" style="font-size: 0.72rem;">Vừa hoàn tất &bull; Đạt tiêu chuẩn</div>
+                                </div>
+                            </div>
+
+                            <!-- Đang thực hiện -->
+                            <div th:each="item : ${recentInProgressTasks}" class="d-flex align-items-start gap-2.5">
+                                <div class="activity-icon-badge" style="background-color: #3b82f6; width: 28px; height: 28px;">
+                                    <i class="bi bi-play" style="font-size: 0.85rem;"></i>
+                                </div>
+                                <div class="flex-grow-1" style="font-size: 0.82rem; line-height: 1.35;">
+                                    <div>
+                                        <span class="fw-bold text-main" th:text="${item.assignee() != null ? item.assignee().fullName() : 'Thành viên'}">Tên</span>
+                                        <span class="text-muted">đang thực hiện</span>
+                                        <a th:href="@{/tasks/{id}(id=${item.id()})}" class="text-decoration-none fw-semibold text-main text-truncate d-inline-block" style="max-width: 170px; vertical-align: bottom;" th:text="${item.title()}">Task</a>
+                                    </div>
+                                    <div class="text-light small mt-0.5" style="font-size: 0.72rem;">Đang xử lý &bull; Tiến độ ổn định</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-top mt-3">
+                        <a th:href="@{/tasks/kanban}" class="text-decoration-none small text-primary fw-semibold">
+                            <span>Xem toàn bộ dòng nhật ký (Kanban)</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart.js Donut Chart Initialization Script -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                var todoVal = /*[[${todoCount}]]*/ 7;
+                var inProgressVal = /*[[${inProgressCount}]]*/ 7;
+                var reviewVal = /*[[${reviewCount}]]*/ 7;
+                var doneVal = /*[[${doneCount}]]*/ 7;
+
+                var ctx = document.getElementById('taskStatusDonutChart');
+                if (ctx) {
+                    new Chart(ctx.getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Chờ làm', 'Đang làm', 'Chờ duyệt', 'Hoàn thành'],
+                            datasets: [{
+                                data: [todoVal, inProgressVal, reviewVal, doneVal],
+                                backgroundColor: [
+                                    '#db2777', // Rose Pink for TODO
+                                    '#2563eb', // Blue for IN_PROGRESS
+                                    '#ca8a04', // Amber/Yellow for REVIEW
+                                    '#059669'  // Emerald Green for DONE
+                                ],
+                                borderWidth: 3,
+                                borderColor: '#ffffff',
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            cutout: '72%',
+                            responsive: false,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false // We use the custom right-hand legend matching Image 2
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            var total = todoVal + inProgressVal + reviewVal + doneVal;
+                                            var pct = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+                                            return context.label + ': ' + context.parsed + ' (' + pct + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>

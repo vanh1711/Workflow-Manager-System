@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title th:text="${isEdit ? 'Chỉnh Sửa Task #' + taskId : 'Tạo Task Mới'} + ' — TaskFlow'">Biểu Mẫu Công Việc</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Breadcrumb Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+            <div>
+                <h1 class="h5 fw-bold mb-0 text-main" th:text="${isEdit ? 'Chỉnh Sửa Công Việc #' + taskId : 'Tạo Công Việc Mới'}">
+                    Tạo Công Việc
+                </h1>
+                <p class="text-muted small mb-0">Điền thông tin và thuộc tính công việc theo chuẩn dự án</p>
+            </div>
+            <div>
+                <a th:href="${isEdit ? '/tasks/' + taskId : '/tasks'}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg me-1"></i> Đóng
+                </a>
+            </div>
+        </div>
+
+        <!-- Property-List Form Container -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="app-card p-4">
+                    <form th:action="${isEdit ? '/tasks/' + taskId : '/tasks'}"
+                          th:object="${taskRequest}"
+                          method="post"
+                          novalidate>
+
+                        <!-- Hidden version field for Optimistic Locking -->
+                        <input th:if="${isEdit}" type="hidden" th:field="*{version}" />
+
+                        <div class="property-table">
+                            <!-- Status Row (Show in Edit mode) -->
+                            <div th:if="${isEdit and taskStatus != null}" class="property-row pb-3 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-check2-circle text-muted"></i>
+                                    <span>Trạng thái</span>
+                                </div>
+                                <div class="property-value">
+                                    <span class="badge-custom"
+                                          th:classappend="${taskStatus.name() == 'TODO' ? 'badge-todo' : (taskStatus.name() == 'IN_PROGRESS' ? 'badge-in-progress' : (taskStatus.name() == 'REVIEW' ? 'badge-review' : 'badge-done'))}">
+                                        <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                                        <span th:text="${taskStatus.label}">TODO</span>
+                                    </span>
+                                    <span class="text-muted small ms-2">(Trạng thái được quản lý qua nút chuyển luồng)</span>
+                                </div>
+                            </div>
+
+                            <!-- Title Row -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-fonts text-muted"></i>
+                                    <span>Tiêu đề <span class="text-danger">*</span></span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <input type="text"
+                                           id="title"
+                                           th:field="*{title}"
+                                           class="form-control form-control-sm w-100"
+                                           th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'"
+                                           placeholder="Ví dụ: Nâng cấp bảo mật cổng thanh toán..."
+                                           maxlength="150"
+                                           required />
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">
+                                        Tiêu đề không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Due Date Row -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-calendar3 text-muted"></i>
+                                    <span>Hạn chót <span class="text-danger">*</span></span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <input type="date"
+                                           id="dueDate"
+                                           th:field="*{dueDate}"
+                                           class="form-control form-control-sm"
+                                           style="max-width: 260px;"
+                                           th:classappend="${#fields.hasErrors('dueDate')} ? 'is-invalid'"
+                                           required />
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}">
+                                        Hạn chót không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Assignee Row -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-person text-muted"></i>
+                                    <span>Người phụ trách</span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <select id="assigneeId"
+                                            th:field="*{assigneeId}"
+                                            class="form-select form-select-sm"
+                                            style="max-width: 320px;"
+                                            th:classappend="${#fields.hasErrors('assigneeId')} ? 'is-invalid'">
+                                        <option value="">-- Chưa chỉ định --</option>
+                                        <option th:each="u : ${users}"
+                                                th:value="${u.id()}"
+                                                th:text="${u.fullName() + ' (' + u.username() + ')'}">Nguyen Van A</option>
+                                    </select>
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('assigneeId')}" th:errors="*{assigneeId}">
+                                        Người phụ trách không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tags / Category Row -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-tag text-muted"></i>
+                                    <span>Dự án / Phân hệ <span class="text-danger">*</span></span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <select id="categoryId"
+                                            th:field="*{categoryId}"
+                                            class="form-select form-select-sm"
+                                            style="max-width: 320px;"
+                                            th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid'"
+                                            required>
+                                        <option value="">-- Chọn danh mục dự án --</option>
+                                        <option th:each="cat : ${categories}"
+                                                th:value="${cat.id()}"
+                                                th:text="${cat.name()}">Core Banking</option>
+                                    </select>
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}">
+                                        Danh mục không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Priority Row (Pastel options) -->
+                            <div class="property-row py-2 border-bottom">
+                                <div class="property-label">
+                                    <i class="bi bi-shield text-muted"></i>
+                                    <span>Độ ưu tiên <span class="text-danger">*</span></span>
+                                </div>
+                                <div class="property-value">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div th:each="pr : ${priorities}" class="form-check form-check-inline m-0">
+                                            <input class="form-check-input"
+                                                   type="radio"
+                                                   name="priority"
+                                                   th:id="${'priority_' + pr.name()}"
+                                                   th:value="${pr.name()}"
+                                                   th:checked="${taskRequest.priority != null and taskRequest.priority.name() == pr.name()}"
+                                                   required />
+                                            <label class="form-check-label badge-custom"
+                                                   th:for="${'priority_' + pr.name()}"
+                                                   th:classappend="${pr.name() == 'HIGH' ? 'priority-badge-high' : (pr.name() == 'MEDIUM' ? 'priority-badge-medium' : 'priority-badge-low')}"
+                                                   th:text="${pr.label}">
+                                                Ưu tiên
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="invalid-feedback small d-block" th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}">
+                                        Độ ưu tiên không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Description Row -->
+                            <div class="property-row py-2">
+                                <div class="property-label align-self-start pt-1">
+                                    <i class="bi bi-file-text text-muted"></i>
+                                    <span>Mô tả chi tiết</span>
+                                </div>
+                                <div class="property-value flex-column align-items-start">
+                                    <textarea id="description"
+                                              th:field="*{description}"
+                                              class="form-control form-control-sm w-100"
+                                              th:classappend="${#fields.hasErrors('description')} ? 'is-invalid'"
+                                              rows="4"
+                                              placeholder="Nhập yêu cầu, tiêu chí nghiệm thu hoặc checklist công việc..."></textarea>
+                                    <div class="invalid-feedback small" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+                                        Mô tả không hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions: Cancel (Outline) & Save (Solid Black) -->
+                        <div class="d-flex align-items-center justify-content-end gap-2 pt-4 mt-3 border-top">
+                            <a th:href="${isEdit ? '/tasks/' + taskId : '/tasks'}" class="btn btn-outline-secondary px-4">
+                                Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <span th:text="${isEdit ? 'Lưu thay đổi' : 'Lưu công việc'}">Lưu</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

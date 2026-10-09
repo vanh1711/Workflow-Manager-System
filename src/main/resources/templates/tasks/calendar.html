@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Lịch Công Việc — TaskFlow</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Header & View Switcher -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+            <div>
+                <h1 class="h5 fw-bold mb-0 text-main">Lịch Công Việc &amp; Tiến Độ (Task Calendar)</h1>
+                <p class="text-muted small mb-0"
+                   th:text="${(currentUser != null and currentUser.role == 'MEMBER') ? 'Theo dõi hạn chót các đầu việc được giao cho bạn theo dòng thời gian tháng' : 'Theo dõi hạn chót các đầu việc theo dòng thời gian tháng của toàn đội ngũ'}">
+                   Theo dõi hạn chót các đầu việc theo dòng thời gian tháng
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <!-- 3 View Mode Tabs: Spreadsheet, Timeline, Kanban -->
+                <div class="view-mode-tabs">
+                    <a th:href="@{/tasks}" class="view-mode-tab">
+                        <i class="bi bi-grid-3x3"></i>
+                        <span>Spreadsheet</span>
+                    </a>
+                    <a th:href="@{/tasks/calendar}" class="view-mode-tab active">
+                        <i class="bi bi-bar-chart-steps"></i>
+                        <span>Timeline</span>
+                    </a>
+                    <a th:href="@{/tasks/kanban}" class="view-mode-tab">
+                        <i class="bi bi-kanban"></i>
+                        <span>Kanban</span>
+                    </a>
+                </div>
+
+                <a th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                   th:href="@{/tasks/new}" class="btn btn-primary btn-sm px-3">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo Task
+                </a>
+            </div>
+        </div>
+
+        <!-- Month Navigation & Filter Bar -->
+        <div class="app-card p-3 mb-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <!-- Month Navigator -->
+                <div class="d-flex align-items-center gap-2">
+                    <a th:href="@{/tasks/calendar(year=${prevYearMonth.year}, month=${prevYearMonth.monthValue}, categoryId=${selectedCategoryId}, assigneeId=${(currentUser != null and currentUser.role == 'MEMBER') ? null : selectedAssigneeId})}"
+                       class="btn btn-outline-secondary btn-sm"
+                       title="Tháng trước">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <div class="fw-bold fs-6 text-main px-2">
+                        Tháng <span th:text="${targetMonth}">10</span> / <span th:text="${targetYear}">2026</span>
+                    </div>
+                    <a th:href="@{/tasks/calendar(year=${nextYearMonth.year}, month=${nextYearMonth.monthValue}, categoryId=${selectedCategoryId}, assigneeId=${(currentUser != null and currentUser.role == 'MEMBER') ? null : selectedAssigneeId})}"
+                       class="btn btn-outline-secondary btn-sm"
+                       title="Tháng sau">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a th:href="@{/tasks/calendar}" class="btn btn-outline-secondary btn-sm ms-2">Hôm nay</a>
+                    <span class="badge bg-light text-dark border ms-2"
+                          th:text="${(currentUser != null and currentUser.role == 'MEMBER') ? (totalMonthTasks + ' công việc của bạn trong tháng') : (totalMonthTasks + ' công việc trong tháng')}">
+                        28 task
+                    </span>
+                </div>
+
+                <!-- Filter by category & assignee -->
+                <form th:action="@{/tasks/calendar}" method="get" class="d-flex align-items-center gap-2">
+                    <input type="hidden" name="year" th:value="${targetYear}" />
+                    <input type="hidden" name="month" th:value="${targetMonth}" />
+
+                    <select name="categoryId" class="form-select form-select-sm" style="max-width: 200px;" onchange="this.form.submit()">
+                        <option value="">-- Tất cả dự án --</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id()}"
+                                th:text="${cat.name()}"
+                                th:selected="${selectedCategoryId != null and selectedCategoryId == cat.id()}"></option>
+                    </select>
+
+                    <!-- Phân quyền chọn người phụ trách: Admin được chọn lọc hoặc xem tất cả; Member cố định theo cá nhân -->
+                    <select th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                            name="assigneeId" class="form-select form-select-sm" style="max-width: 180px;" onchange="this.form.submit()">
+                        <option value="">-- Tất cả người làm --</option>
+                        <option th:each="u : ${users}"
+                                th:value="${u.id()}"
+                                th:text="${u.fullName()}"
+                                th:selected="${selectedAssigneeId != null and selectedAssigneeId == u.id()}"></option>
+                    </select>
+
+                    <div th:unless="${currentUser == null or currentUser.role == 'ADMIN'}"
+                         class="d-flex align-items-center gap-1.5 px-2.5 py-1 bg-light border rounded text-muted small" style="font-size: 0.8rem;">
+                        <i class="bi bi-person-check text-primary"></i>
+                        <span>Lịch của: <strong class="text-main" th:text="${currentUser.fullName}">Bạn</strong></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Calendar Timeline Strip (Matching Image 3 Top Widget) -->
+        <div class="app-card p-3 mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em;">
+                    Dòng thời gian các ngày trong tháng (Timeline Strip)
+                </span>
+                <span class="small text-muted">Cuộn ngang để xem tất cả ngày</span>
+            </div>
+            <div class="d-flex gap-2 overflow-x-auto pb-2" style="white-space: nowrap;">
+                <div th:each="day : ${daysInMonth}"
+                     class="p-2 border text-center flex-shrink-0"
+                     style="min-width: 110px; background-color: #ffffff;"
+                     th:styleappend="${day.isEqual(T(java.time.LocalDate).now())} ? 'border: 2px solid #111827 !important; background-color: #f8fafc;' : ''">
+                    <div class="small fw-semibold text-muted" style="font-size: 0.72rem;" th:text="${#temporals.format(day, 'E')}">Mon</div>
+                    <div class="fw-bold fs-6 text-main my-1" th:text="${day.dayOfMonth}">1</div>
+
+                    <!-- Tasks on this day -->
+                    <div th:with="dayTasks=${tasksByDate.get(day)}">
+                        <div th:if="${dayTasks != null and !dayTasks.empty}">
+                            <div th:each="t : ${dayTasks}" class="mb-1">
+                                <a th:href="@{/tasks/{id}(id=${t.id})}"
+                                   class="badge-custom d-block text-truncate text-decoration-none text-start"
+                                   style="font-size: 0.68rem; max-width: 100px;"
+                                   th:classappend="${t.priority.name() == 'HIGH' ? 'priority-badge-high' : (t.priority.name() == 'MEDIUM' ? 'priority-badge-medium' : 'priority-badge-low')}"
+                                   th:title="${t.title}"
+                                   th:text="${t.title}">Task</a>
+                            </div>
+                        </div>
+                        <div th:unless="${dayTasks != null and !dayTasks.empty}" class="text-muted" style="font-size: 0.7rem;">
+                            —
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Month Grid View -->
+        <div class="app-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-bold text-main">Chi tiết lịch tháng</span>
+                <div class="d-flex align-items-center gap-3 small">
+                    <span class="d-flex align-items-center gap-1">
+                        <span class="badge-custom priority-badge-high" style="font-size: 0.65rem;">Cao / Gấp</span>
+                    </span>
+                    <span class="d-flex align-items-center gap-1">
+                        <span class="badge-custom priority-badge-medium" style="font-size: 0.65rem;">Trung bình</span>
+                    </span>
+                    <span class="d-flex align-items-center gap-1">
+                        <span class="badge-custom priority-badge-low" style="font-size: 0.65rem;">Thấp</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Month Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 align-top" style="table-layout: fixed;">
+                    <thead>
+                        <tr class="text-center text-muted small bg-light">
+                            <th style="width: 14.28%;">Thứ 2</th>
+                            <th style="width: 14.28%;">Thứ 3</th>
+                            <th style="width: 14.28%;">Thứ 4</th>
+                            <th style="width: 14.28%;">Thứ 5</th>
+                            <th style="width: 14.28%;">Thứ 6</th>
+                            <th style="width: 14.28%;" class="text-primary">Thứ 7</th>
+                            <th style="width: 14.28%;" class="text-danger">Chủ Nhật</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Grid cells by weeks -->
+                        <tr>
+                            <!-- For days in month, render grid -->
+                            <td colspan="7" class="p-0 border-0">
+                                <div class="d-flex flex-wrap">
+                                    <div th:each="day : ${daysInMonth}"
+                                         class="p-2 border"
+                                         style="width: 14.285%; min-height: 110px; background-color: #ffffff;"
+                                         th:styleappend="${day.isEqual(T(java.time.LocalDate).now())} ? 'background-color: #f0fdf4;' : ''">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="small fw-bold"
+                                                  th:classappend="${day.isEqual(T(java.time.LocalDate).now())} ? 'badge bg-dark text-white px-1' : 'text-main'"
+                                                  th:text="${day.dayOfMonth}">1</span>
+                                            <span th:if="${day.isEqual(T(java.time.LocalDate).now())}" class="text-success small fw-semibold" style="font-size: 0.65rem;">Hôm nay</span>
+                                        </div>
+
+                                        <!-- Day tasks -->
+                                        <div th:with="dayTasks=${tasksByDate.get(day)}">
+                                            <div th:if="${dayTasks != null and !dayTasks.empty}">
+                                                <div th:each="t : ${dayTasks}" class="mb-1">
+                                                    <a th:href="@{/tasks/{id}(id=${t.id})}"
+                                                       class="badge-custom d-block text-truncate text-decoration-none"
+                                                       style="font-size: 0.72rem;"
+                                                       th:classappend="${t.priority.name() == 'HIGH' ? 'priority-badge-high' : (t.priority.name() == 'MEDIUM' ? 'priority-badge-medium' : 'priority-badge-low')}"
+                                                       th:title="${t.title + ' (' + t.status.label + ')'}">
+                                                        <span th:text="${t.title}">Task Title</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

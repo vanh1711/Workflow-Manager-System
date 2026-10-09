@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập — TaskFlow Doanh Nghiệp</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- App CSS -->
+    <link th:href="@{/css/app.css(v='2.5')}" rel="stylesheet">
+
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            background-color: #e0e7ff;
+            background-image: url('/images/login-bg.jpg');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            position: relative;
+        }
+
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
+            pointer-events: none;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            box-shadow: 0 20px 45px -10px rgba(67, 56, 202, 0.16), 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-brand-badge {
+            width: 44px;
+            height: 44px;
+            background: #111827;
+            color: #ffffff;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-account-pill {
+            background-color: #fafbfc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .demo-account-pill:hover {
+            border-color: #cbd5e1;
+            background-color: #f1f5f9;
+            transform: translateY(-1px);
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #64748b;
+            padding: 0;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Header Section -->
+            <div class="p-4 pt-4 text-center border-bottom bg-white bg-opacity-50">
+                <div class="auth-brand-badge mb-2">
+                    <i class="bi bi-kanban"></i>
+                </div>
+                <h1 class="h5 fw-bold mb-1 text-main">TaskFlow Enterprise</h1>
+                <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                    Hệ thống Điều phối Tác vụ &amp; Quản trị Dự án Nội bộ
+                </p>
+                <div class="mt-2">
+                    <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.72rem;">
+                        <i class="bi bi-shield-check text-success me-1"></i>Mã hóa bảo mật BCrypt
+                    </span>
+                </div>
+            </div>
+
+            <!-- Form Body -->
+            <div class="p-4">
+                <!-- Thông báo lỗi nếu có -->
+                <div th:if="${errorMessage != null}" class="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-2" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span th:text="${errorMessage}">Tên đăng nhập hoặc mật khẩu không chính xác</span>
+                </div>
+
+                <!-- Thông báo thành công (ví dụ vừa logout) -->
+                <div th:if="${successMessage != null}" class="alert alert-success py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-2" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${successMessage}">Đã đăng xuất thành công</span>
+                </div>
+
+                <form th:action="@{/login}" th:object="${loginRequest}" method="post">
+                    <!-- Username or Email Field -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-main mb-1">
+                            Tên đăng nhập hoặc Email <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text"
+                                   th:field="*{usernameOrEmail}"
+                                   id="usernameInput"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('usernameOrEmail')} ? 'is-invalid' : ''"
+                                   placeholder="Ví dụ: admin hoặc admin@bank.corp"
+                                   required
+                                   autofocus>
+                        </div>
+                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('usernameOrEmail')}" th:errors="*{usernameOrEmail}"></div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold text-main mb-1">
+                            Mật khẩu <span class="text-danger">*</span>
+                        </label>
+                        <div class="position-relative">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <input type="password"
+                                       th:field="*{password}"
+                                       id="passwordInput"
+                                       class="form-control pe-5"
+                                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                                       placeholder="Nhập mật khẩu được cấp"
+                                       required>
+                            </div>
+                            <button type="button" class="password-toggle-btn" id="togglePasswordBtn" title="Hiện/ẩn mật khẩu">
+                                <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-dark w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                        <span>Đăng nhập hệ thống</span>
+                    </button>
+                </form>
+
+                <!-- Demo Credentials Section (Nhấn vào là tự điền) -->
+                <div class="mt-4 pt-3 border-top">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                            Tài khoản nội bộ được cấp sẵn
+                        </span>
+                        <span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Nhấn để điền</span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2">
+                        <!-- 1. Admin -->
+                        <div class="demo-account-pill d-flex align-items-center justify-content-between" onclick="fillCredentials('admin', '123456')">
+                            <div>
+                                <div class="fw-semibold text-main small">Nguyễn Văn An (Quản trị viên)</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">Username: <code>admin</code> • Pass: <code>123456</code></div>
+                            </div>
+                            <span class="badge bg-dark text-white" style="font-size: 0.68rem;">ADMIN</span>
+                        </div>
+
+                        <!-- 2. Tech Lead (Member) -->
+                        <div class="demo-account-pill d-flex align-items-center justify-content-between" onclick="fillCredentials('dev_lead', '123456')">
+                            <div>
+                                <div class="fw-semibold text-main small">Trần Thị Bích (Tech Lead)</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">Username: <code>dev_lead</code> • Pass: <code>123456</code></div>
+                            </div>
+                            <span class="badge bg-secondary text-white" style="font-size: 0.68rem;">MEMBER</span>
+                        </div>
+
+                        <!-- 3. Developer (Member) -->
+                        <div class="demo-account-pill d-flex align-items-center justify-content-between" onclick="fillCredentials('developer', '123456')">
+                            <div>
+                                <div class="fw-semibold text-main small">Lê Văn Cường (Developer)</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">Username: <code>developer</code> • Pass: <code>123456</code></div>
+                            </div>
+                            <span class="badge bg-secondary text-white" style="font-size: 0.68rem;">MEMBER</span>
+                        </div>
+                    </div>
+
+                    <div class="text-muted small text-center mt-3" style="font-size: 0.74rem;">
+                        <i class="bi bi-info-circle me-1"></i>Hệ thống nội bộ chỉ dành cho nhân sự được cấp quyền. Quản trị viên có quyền cấp thêm tài khoản mới tại mục Quản lý Thành viên.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script toggle mật khẩu và điền nhanh thông tin mẫu -->
+    <script>
+        function fillCredentials(username, password) {
+            document.getElementById('usernameInput').value = username;
+            document.getElementById('passwordInput').value = password;
+        }
+
+        document.getElementById('togglePasswordBtn').addEventListener('click', function() {
+            var passInput = document.getElementById('passwordInput');
+            var icon = document.getElementById('togglePasswordIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passInput.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    </script>
+</body>
+</html>

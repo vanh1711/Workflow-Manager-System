@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="pagination(pageData, baseUrl)" th:if="${pageData != null and pageData.totalPages > 1}"
+         class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 pt-3 border-top mt-3">
+        <!-- Thông tin số lượng bản ghi -->
+        <div class="text-muted small">
+            Trang <span class="fw-semibold" th:text="${pageData.page + 1}">1</span> /
+            <span class="fw-semibold" th:text="${pageData.totalPages}">10</span>
+            (Tổng cộng <span class="fw-semibold" th:text="${pageData.totalElements}">100</span> công việc)
+        </div>
+
+        <!-- Các nút phân trang -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Nút Trước -->
+                <li class="page-item" th:classappend="${pageData.first} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{${baseUrl}(page=${pageData.page - 1}, size=${filter.size}, keyword=${filter.keyword}, status=${filter.status}, priority=${filter.priority}, categoryId=${filter.categoryId}, assigneeId=${filter.assigneeId}, dueFrom=${filter.dueFrom}, dueTo=${filter.dueTo}, sortBy=${filter.sortBy}, sortDirection=${filter.sortDirection})}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                <!-- Danh sách số trang -->
+                <li th:each="pageNum : ${#numbers.sequence(0, pageData.totalPages - 1)}"
+                    class="page-item" th:classappend="${pageNum == pageData.page} ? 'active'">
+                    <a class="page-link"
+                       th:text="${pageNum + 1}"
+                       th:href="@{${baseUrl}(page=${pageNum}, size=${filter.size}, keyword=${filter.keyword}, status=${filter.status}, priority=${filter.priority}, categoryId=${filter.categoryId}, assigneeId=${filter.assigneeId}, dueFrom=${filter.dueFrom}, dueTo=${filter.dueTo}, sortBy=${filter.sortBy}, sortDirection=${filter.sortDirection})}">
+                        1
+                    </a>
+                </li>
+
+                <!-- Nút Sau -->
+                <li class="page-item" th:classappend="${pageData.last} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{${baseUrl}(page=${pageData.page + 1}, size=${filter.size}, keyword=${filter.keyword}, status=${filter.status}, priority=${filter.priority}, categoryId=${filter.categoryId}, assigneeId=${filter.assigneeId}, dueFrom=${filter.dueFrom}, dueTo=${filter.dueTo}, sortBy=${filter.sortBy}, sortDirection=${filter.sortDirection})}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</body>
+</html>

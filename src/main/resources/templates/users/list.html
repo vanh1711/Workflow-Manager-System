@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Quản Lý Thành Viên &amp; Cấp Tài Khoản — TaskFlow</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Header & Action Button -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+            <div>
+                <h1 class="h5 fw-bold mb-0 text-main">Quản Lý Nhân Sự &amp; Cấp Tài Khoản</h1>
+                <p class="text-muted small mb-0">Hệ thống cấp tài khoản nội bộ và phân quyền vai trò cho nhân sự doanh nghiệp</p>
+            </div>
+
+            <div>
+                <button type="button" class="btn btn-primary btn-sm px-3 d-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                    <i class="bi bi-person-plus-fill"></i>
+                    <span>Cấp Tài Khoản Mới</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- User List Table Card -->
+        <div class="app-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-bold text-main">Danh sách nhân sự được cấp quyền</span>
+                <span class="badge bg-light text-dark border" th:text="${#lists.size(usersList)} + ' nhân sự'">3 nhân sự</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small">
+                        <tr>
+                            <th class="ps-3" style="width: 250px;">Nhân sự</th>
+                            <th style="width: 160px;">Tên đăng nhập</th>
+                            <th style="width: 240px;">Email</th>
+                            <th style="width: 150px;">Vai trò hệ thống</th>
+                            <th style="width: 180px;">Bảo mật mật khẩu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${usersList}">
+                            <!-- Tên & Avatar -->
+                            <td class="ps-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-square"
+                                         th:styleappend="${u.role == 'ADMIN'} ? 'background-color: #111827; color: #ffffff;' : 'background-color: #f1f5f9; color: #334155;'"
+                                         th:text="${#strings.substring(u.fullName, 0, 1)}">A</div>
+                                    <div>
+                                        <div class="fw-semibold text-main small" th:text="${u.fullName}">Nguyễn Văn An</div>
+                                        <div class="text-muted" style="font-size: 0.72rem;" th:text="'ID: #' + ${u.id}">ID: #1</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Username -->
+                            <td>
+                                <code class="fw-semibold" th:text="${u.username}">admin</code>
+                            </td>
+
+                            <!-- Email -->
+                            <td class="small text-muted" th:text="${u.email}">admin@bank.corp</td>
+
+                            <!-- Role Badge -->
+                            <td>
+                                <span th:if="${u.role == 'ADMIN'}" class="badge bg-dark text-white px-2 py-1" style="font-size: 0.72rem;">
+                                    <i class="bi bi-shield-lock-fill me-1"></i>Quản trị viên (ADMIN)
+                                </span>
+                                <span th:unless="${u.role == 'ADMIN'}" class="badge bg-secondary text-white px-2 py-1" style="font-size: 0.72rem;">
+                                    <i class="bi bi-person-fill me-1"></i>Thành viên (MEMBER)
+                                </span>
+                            </td>
+
+                            <!-- Password status -->
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size: 0.72rem;">
+                                    <i class="bi bi-check2-circle me-1"></i>Mã hóa BCrypt
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal Cấp Tài Khoản Mới -->
+        <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true"
+             th:classappend="${showCreateModal != null and showCreateModal} ? 'show d-block' : ''"
+             th:style="${showCreateModal != null and showCreateModal} ? 'background: rgba(0,0,0,0.5);' : ''">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title h6 fw-bold text-main" id="createUserModalLabel">
+                            <i class="bi bi-person-plus text-primary me-1"></i>Cấp Tài Khoản Nội Bộ Mới
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                                th:onclick="${showCreateModal != null and showCreateModal} ? 'window.location.href=\'/users\'' : ''"></button>
+                    </div>
+
+                    <form th:action="@{/users}" th:object="${userCreateRequest}" method="post">
+                        <div class="modal-body p-4">
+                            <!-- Alert nếu có lỗi từ controller -->
+                            <div th:if="${errorMessage != null}" class="alert alert-danger py-2 px-3 small rounded-2 mb-3">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span th:text="${errorMessage}">Lỗi dữ liệu</span>
+                            </div>
+
+                            <!-- Username -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-main mb-1">
+                                    Tên đăng nhập (Username) <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       th:field="*{username}"
+                                       class="form-control form-control-sm"
+                                       th:classappend="${#fields.hasErrors('username')} ? 'is-invalid' : ''"
+                                       placeholder="Ví dụ: phuong_thao"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                            </div>
+
+                            <!-- Full Name -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-main mb-1">
+                                    Họ và tên nhân sự <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       th:field="*{fullName}"
+                                       class="form-control form-control-sm"
+                                       th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                                       placeholder="Ví dụ: Nguyễn Phương Thảo"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-main mb-1">
+                                    Email công việc <span class="text-danger">*</span>
+                                </label>
+                                <input type="email"
+                                       th:field="*{email}"
+                                       class="form-control form-control-sm"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                                       placeholder="Ví dụ: thao.np@bank.corp"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-main mb-1">
+                                    Mật khẩu ban đầu <span class="text-danger">*</span>
+                                </label>
+                                <input type="password"
+                                       th:field="*{password}"
+                                       class="form-control form-control-sm"
+                                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                                       placeholder="Tối thiểu 6 ký tự"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">
+                                    <i class="bi bi-shield-lock me-1"></i>Mật khẩu sẽ được mã hóa an toàn bằng thuật toán BCrypt trước khi ghi vào cơ sở dữ liệu.
+                                </div>
+                            </div>
+
+                            <!-- Role -->
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold text-main mb-1">
+                                    Phân quyền vai trò <span class="text-danger">*</span>
+                                </label>
+                                <select th:field="*{role}" class="form-select form-select-sm" required>
+                                    <option th:each="r : ${roles}"
+                                            th:value="${r.name()}"
+                                            th:text="${r.name() == 'ADMIN' ? 'Quản trị viên (ADMIN) — Toàn quyền hệ thống' : 'Thành viên (MEMBER) — Chỉ xem và thực hiện công việc được giao'}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer bg-light border-top p-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"
+                                    th:onclick="${showCreateModal != null and showCreateModal} ? 'window.location.href=\'/users\'' : ''">Hủy bỏ</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-3">
+                                <i class="bi bi-check-lg me-1"></i>Xác nhận Cấp Tài Khoản
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

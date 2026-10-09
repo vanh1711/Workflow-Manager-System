@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: main-layout(~{::title}, ~{::#page-content})}">
+<head>
+    <title th:text="${task.title} + ' — TaskFlow'">Chi Tiết Công Việc</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Top Action Bar -->
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <a th:href="@{/tasks}" class="btn btn-outline-secondary btn-sm" title="Quay lại danh sách">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <span class="text-muted small">Chi tiết công việc #<span th:text="${task.id}">1</span></span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Edit Button (Chỉ dành cho Admin & Chưa DONE) -->
+                <a th:if="${(currentUser == null or currentUser.role == 'ADMIN') and task.status.name() != 'DONE'}"
+                   th:href="@{/tasks/{id}/edit(id=${task.id})}"
+                   class="btn btn-primary btn-sm px-3">
+                    <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+                </a>
+                <button th:if="${(currentUser == null or currentUser.role == 'ADMIN') and task.status.name() == 'DONE'}"
+                        class="btn btn-outline-secondary btn-sm"
+                        disabled
+                        title="Công việc đã hoàn thành không thể chỉnh sửa">
+                    <i class="bi bi-lock me-1"></i> Đã hoàn thành (Khóa)
+                </button>
+
+                <!-- Delete Form (Chỉ dành cho Admin) -->
+                <form th:if="${currentUser == null or currentUser.role == 'ADMIN'}"
+                      th:action="@{/tasks/{id}/delete(id=${task.id})}"
+                      method="post"
+                      class="d-inline"
+                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa công việc này không?');">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm text-danger" title="Xóa">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Task Content Card (Clean SaaS Property-List) -->
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <div class="app-card p-4 p-md-5">
+                    <!-- Task Title & Urgent Tag -->
+                    <div class="d-flex align-items-start gap-2.5 mb-4">
+                        <i class="bi bi-check2-square text-muted mt-1" style="font-size: 1.4rem;"></i>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h1 class="h3 fw-bold mb-0 text-main" th:text="${task.title}">Tiêu đề công việc</h1>
+                                <span class="badge-custom"
+                                      th:classappend="${task.priority.name() == 'HIGH' ? 'priority-badge-high' : (task.priority.name() == 'MEDIUM' ? 'priority-badge-medium' : 'priority-badge-low')}"
+                                      th:text="${task.priority.label}">
+                                    Khẩn cấp
+                                </span>
+                                <span th:if="${task.overdue}" class="badge-custom priority-badge-high">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Quá hạn
+                                </span>
+                            </div>
+                            <div class="text-muted small mt-1">
+                                Tạo ngày <span th:text="${#temporals.format(task.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
+                                &bull; Cập nhật lần cuối: <span th:text="${#temporals.format(task.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Properties Section -->
+                    <div class="property-table mb-4 pt-2 border-top">
+                        <!-- Status Property -->
+                        <div class="property-row py-2 border-bottom">
+                            <div class="property-label">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Trạng thái</span>
+                            </div>
+                            <div class="property-value">
+                                <span class="badge-custom"
+                                      th:classappend="${task.status.name() == 'TODO' ? 'badge-todo' : (task.status.name() == 'IN_PROGRESS' ? 'badge-in-progress' : (task.status.name() == 'REVIEW' ? 'badge-review' : 'badge-done'))}">
+                                    <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                                    <span th:text="${task.status.label}">Đang làm</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Due Date Property -->
+                        <div class="property-row py-2 border-bottom">
+                            <div class="property-label">
+                                <i class="bi bi-calendar3"></i>
+                                <span>Hạn chót</span>
+                            </div>
+                            <div class="property-value">
+                                <span class="fw-medium"
+                                      th:classappend="${task.overdue} ? 'text-danger fw-bold' : 'text-main'"
+                                      th:text="${#temporals.format(task.dueDate, 'dd/MM/yyyy')}">
+                                    02/02/2027
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Assignee Property -->
+                        <div class="property-row py-2 border-bottom">
+                            <div class="property-label">
+                                <i class="bi bi-person"></i>
+                                <span>Người phụ trách</span>
+                            </div>
+                            <div class="property-value">
+                                <div th:if="${task.assignee != null}" class="d-flex align-items-center gap-2">
+                                    <div class="avatar-square-sm"
+                                         th:text="${#strings.substring(task.assignee.fullName, 0, 1)}">A</div>
+                                    <span class="fw-medium text-main" th:text="${task.assignee.fullName}">Nguyễn Văn A</span>
+                                    <span class="text-muted small" th:text="'(' + ${task.assignee.roleLabel} + ')'">(Thành viên)</span>
+                                </div>
+                                <span th:unless="${task.assignee != null}" class="text-muted fst-italic">Chưa phân công</span>
+                            </div>
+                        </div>
+
+                        <!-- Category / Project Property -->
+                        <div class="property-row py-2 border-bottom">
+                            <div class="property-label">
+                                <i class="bi bi-tag"></i>
+                                <span>Dự án / Phân hệ</span>
+                            </div>
+                            <div class="property-value">
+                                <div th:if="${task.category != null}" class="d-flex align-items-center gap-2">
+                                    <span class="d-inline-block"
+                                          th:style="'width: 10px; height: 10px; background-color: ' + ${task.category.colorHex}"></span>
+                                    <span class="fw-medium text-main" th:text="${task.category.name}">Core Banking</span>
+                                </div>
+                                <span th:unless="${task.category != null}" class="text-muted fst-italic">Không có danh mục</span>
+                            </div>
+                        </div>
+
+                        <!-- Optimistic Locking Version -->
+                        <div class="property-row py-2 border-bottom">
+                            <div class="property-label">
+                                <i class="bi bi-shield-check"></i>
+                                <span>Phiên bản khóa</span>
+                            </div>
+                            <div class="property-value">
+                                <span class="badge bg-light text-dark border" th:text="'v' + ${task.version}">v0</span>
+                            </div>
+                        </div>
+
+                        <!-- Description Property -->
+                        <div class="property-row py-3 border-bottom">
+                            <div class="property-label align-self-start pt-1">
+                                <i class="bi bi-file-text"></i>
+                                <span>Mô tả</span>
+                            </div>
+                            <div class="property-value">
+                                <div class="text-break w-100" style="white-space: pre-wrap; color: var(--text-main); font-size: 0.92rem; line-height: 1.6;"
+                                     th:text="${task.description != null and !task.description.isBlank() ? task.description : 'Không có mô tả chi tiết cho công việc này.'}">
+                                    Nội dung mô tả...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Workflow State Transition Actions -->
+                    <div class="pt-2">
+                        <div class="fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.05em;">
+                            Chuyển đổi trạng thái luồng (Workflow Transition)
+                        </div>
+
+                        <div th:if="${allowedNextStatuses.empty}">
+                            <div class="p-3 bg-light border text-muted small">
+                                <i class="bi bi-check-all text-success me-1"></i> Công việc đã đạt trạng thái hoàn thành cuối cùng. Không thể chuyển tiếp.
+                            </div>
+                        </div>
+
+                        <div th:unless="${allowedNextStatuses.empty}" class="d-flex flex-wrap gap-2">
+                            <form th:each="st : ${allowedNextStatuses}"
+                                  th:action="@{/tasks/{id}/status(id=${task.id})}"
+                                  method="post"
+                                  class="d-inline">
+                                <input type="hidden" name="status" th:value="${st.name()}" />
+                                <button type="submit" class="btn btn-outline-secondary btn-sm px-3 d-flex align-items-center gap-1.5">
+                                    <span>Chuyển sang <strong th:text="${st.label}">Tiếp theo</strong></span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
