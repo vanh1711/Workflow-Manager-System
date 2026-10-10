@@ -57,7 +57,7 @@ public class DataSeeder implements CommandLineRunner {
                 userRepository.save(u);
                 log.info("[DataSeeder] Đã cập nhật mật khẩu mã hóa BCrypt '123456' cho tài khoản: {}", u.getUsername());
             });
-            seedInitialNotificationsIfEmpty();
+            cleanSystemNotifications();
             return;
         }
 
@@ -413,30 +413,16 @@ public class DataSeeder implements CommandLineRunner {
         taskRepository.saveAll(initialTasks);
         log.info("[DataSeeder] Đã khởi tạo thành công 28 công việc mẫu đại diện nghiệp vụ Enterprise/FinTech.");
 
-        seedInitialNotificationsIfEmpty();
+        cleanSystemNotifications();
     }
 
-    private void seedInitialNotificationsIfEmpty() {
-        if (notificationRepository.count() == 0) {
-            userRepository.findByUsername("admin").ifPresent(adminUser -> {
-                notificationRepository.save(Notification.builder()
-                        .recipient(adminUser)
-                        .title("🎉 Chào mừng bạn đến với TaskFlow!")
-                        .message("Hệ thống quản lý công việc và tiến độ dự án đã sẵn sàng hoạt động.")
-                        .type(NotificationType.SYSTEM)
-                        .targetUrl("/tasks")
-                        .read(false)
-                        .build());
-                notificationRepository.save(Notification.builder()
-                        .recipient(adminUser)
-                        .title("📢 Cập nhật phiên bản mới 2.4")
-                        .message("Đã kích hoạt Trung tâm thông báo thời gian thực và quản lý hồ sơ cá nhân.")
-                        .type(NotificationType.SYSTEM)
-                        .targetUrl("/tasks")
-                        .read(false)
-                        .build());
-            });
-            log.info("[DataSeeder] Đã khởi tạo các thông báo hệ thống mẫu.");
+    private void cleanSystemNotifications() {
+        List<Notification> systemNotifications = notificationRepository.findAll().stream()
+                .filter(n -> n.getType() == NotificationType.SYSTEM)
+                .toList();
+        if (!systemNotifications.isEmpty()) {
+            notificationRepository.deleteAll(systemNotifications);
+            log.info("[DataSeeder] Đã loại bỏ {} thông báo mẫu không liên quan đến Task.", systemNotifications.size());
         }
     }
 }
