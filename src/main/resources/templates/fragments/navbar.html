@@ -24,10 +24,43 @@
                 <div class="avatar-square-sm" title="Lê Văn Cường (Dev)">C</div>
             </div>
 
-            <!-- Notifications button -->
-            <button class="btn btn-ghost" title="Thông báo hệ thống">
-                <i class="bi bi-bell"></i>
-            </button>
+            <!-- Notifications Dropdown -->
+            <div class="dropdown me-1">
+                <button class="btn btn-ghost position-relative" type="button" id="notificationDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo hệ thống">
+                    <i class="bi bi-bell"></i>
+                    <!-- Badge số thông báo chưa đọc -->
+                    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.65rem; padding: 0.25em 0.45em;">
+                        0
+                    </span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg p-0" aria-labelledby="notificationDropdownBtn" style="width: 360px; max-width: 92vw; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+                    <!-- Dropdown Header -->
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2.5 bg-light border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-semibold text-dark fs-sm">Thông báo</span>
+                            <span id="notificationHeaderCount" class="badge bg-secondary-subtle text-secondary fs-xs">0</span>
+                        </div>
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-muted fs-xs" id="markAllReadBtn" title="Đánh dấu tất cả là đã đọc">
+                            <i class="bi bi-check2-all me-1"></i>Đọc tất cả
+                        </button>
+                    </div>
+
+                    <!-- Dropdown List Container -->
+                    <div id="notificationList" class="overflow-y-auto" style="max-height: 380px;">
+                        <div class="text-center py-4 text-muted fs-sm">
+                            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                            <div>Đang tải thông báo...</div>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Footer -->
+                    <div class="px-3 py-2 bg-light border-top text-center">
+                        <a th:href="@{/tasks}" class="text-decoration-none fs-xs fw-medium text-primary">
+                            Xem tất cả công việc <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <!-- Quick Create Button (Chỉ dành cho Admin) -->
             <a th:if="${currentUser == null or currentUser.role == 'ADMIN'}"

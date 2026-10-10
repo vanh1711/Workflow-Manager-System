@@ -47,6 +47,7 @@ public class SecurityConfig {
                 // 2. Bảo mật chặt chẽ REST API theo chuẩn RBAC
                 .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "MEMBER")
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/tasks/*/status").hasAnyRole("ADMIN", "MEMBER")
+                .requestMatchers("/api/v1/notifications/**").hasAnyRole("ADMIN", "MEMBER")
                 .requestMatchers("/api/**").hasRole("ADMIN")
 
                 // 3. Chức năng Quản trị hệ thống & Tạo/Sửa/Xóa (Chỉ dành riêng cho ADMIN)

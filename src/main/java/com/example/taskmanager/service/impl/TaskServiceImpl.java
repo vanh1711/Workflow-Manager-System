@@ -19,6 +19,8 @@ import com.example.taskmanager.repository.CategoryRepository;
 import com.example.taskmanager.repository.TaskRepository;
 import com.example.taskmanager.repository.UserRepository;
 import com.example.taskmanager.repository.spec.TaskSpecification;
+import com.example.taskmanager.enums.NotificationType;
+import com.example.taskmanager.service.NotificationService;
 import com.example.taskmanager.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     public PageResponse<TaskResponse> getTasks(TaskFilterRequest filter) {
@@ -79,6 +82,16 @@ public class TaskServiceImpl implements TaskService {
         // Quy tắc: Task mới luôn ở trạng thái TODO, được ép buộc bên trong TaskMapper.toEntity
         Task task = TaskMapper.toEntity(request, category, assignee);
         Task saved = taskRepository.save(task);
+
+        if (saved.getAssignee() != null) {
+            notificationService.createNotification(
+                saved.getAssignee(),
+                "📋 Phân công công việc mới: " + saved.getTitle(),
+                "Mức ưu tiên: " + saved.getPriority() + (saved.getDueDate() != null ? " | Hạn chót: " + saved.getDueDate() : ""),
+                NotificationType.TASK_ASSIGNED,
+                "/tasks"
+            );
+        }
 
         log.info("Created new task with ID [{}] and title [{}]", saved.getId(), saved.getTitle());
         return TaskMapper.toResponse(saved);
@@ -127,6 +140,16 @@ public class TaskServiceImpl implements TaskService {
         TaskStatus oldStatus = task.getStatus();
         task.setStatus(targetStatus);
         log.info("Transitioned task [{}] status from [{}] to [{}]", id, oldStatus, targetStatus);
+
+        if (task.getAssignee() != null) {
+            notificationService.createNotification(
+                task.getAssignee(),
+                "🔄 Cập nhật trạng thái: " + task.getTitle(),
+                "Trạng thái công việc đã chuyển sang " + targetStatus,
+                NotificationType.STATUS_CHANGED,
+                "/tasks"
+            );
+        }
 
         return TaskMapper.toResponse(task);
     }

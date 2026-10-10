@@ -96,4 +96,9 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
      * @param status Trạng thái loại trừ (DONE)
      */
     long countByDueDateBetweenAndStatusNot(LocalDate start, LocalDate end, TaskStatus status);
+
+    /**
+     * Lấy danh sách công việc chưa hoàn thành của một người dùng, phục vụ cảnh báo hạn chót và thông báo.
+     */
+    List<Task> findByAssigneeIdAndStatusNotOrderByDueDateAsc(Long assigneeId, TaskStatus status);
 }

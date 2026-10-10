@@ -1,12 +1,15 @@
 package com.example.taskmanager.config;
 
 import com.example.taskmanager.entity.Category;
+import com.example.taskmanager.entity.Notification;
 import com.example.taskmanager.entity.Task;
 import com.example.taskmanager.entity.User;
+import com.example.taskmanager.enums.NotificationType;
 import com.example.taskmanager.enums.Priority;
 import com.example.taskmanager.enums.Role;
 import com.example.taskmanager.enums.TaskStatus;
 import com.example.taskmanager.repository.CategoryRepository;
+import com.example.taskmanager.repository.NotificationRepository;
 import com.example.taskmanager.repository.TaskRepository;
 import com.example.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +43,7 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final TaskRepository taskRepository;
+    private final NotificationRepository notificationRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
@@ -53,6 +57,7 @@ public class DataSeeder implements CommandLineRunner {
                 userRepository.save(u);
                 log.info("[DataSeeder] Đã cập nhật mật khẩu mã hóa BCrypt '123456' cho tài khoản: {}", u.getUsername());
             });
+            seedInitialNotificationsIfEmpty();
             return;
         }
 
@@ -407,5 +412,31 @@ public class DataSeeder implements CommandLineRunner {
 
         taskRepository.saveAll(initialTasks);
         log.info("[DataSeeder] Đã khởi tạo thành công 28 công việc mẫu đại diện nghiệp vụ Enterprise/FinTech.");
+
+        seedInitialNotificationsIfEmpty();
+    }
+
+    private void seedInitialNotificationsIfEmpty() {
+        if (notificationRepository.count() == 0) {
+            userRepository.findByUsername("admin").ifPresent(adminUser -> {
+                notificationRepository.save(Notification.builder()
+                        .recipient(adminUser)
+                        .title("🎉 Chào mừng bạn đến với TaskFlow!")
+                        .message("Hệ thống quản lý công việc và tiến độ dự án đã sẵn sàng hoạt động.")
+                        .type(NotificationType.SYSTEM)
+                        .targetUrl("/tasks")
+                        .read(false)
+                        .build());
+                notificationRepository.save(Notification.builder()
+                        .recipient(adminUser)
+                        .title("📢 Cập nhật phiên bản mới 2.4")
+                        .message("Đã kích hoạt Trung tâm thông báo thời gian thực và quản lý hồ sơ cá nhân.")
+                        .type(NotificationType.SYSTEM)
+                        .targetUrl("/tasks")
+                        .read(false)
+                        .build());
+            });
+            log.info("[DataSeeder] Đã khởi tạo các thông báo hệ thống mẫu.");
+        }
     }
 }

@@ -43,11 +43,15 @@ class TaskRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.example.taskmanager.repository.NotificationRepository notificationRepository;
+
     private User sampleUser;
     private Category sampleCategory;
 
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAllInBatch();
         taskRepository.deleteAllInBatch();
         categoryRepository.deleteAllInBatch();
         userRepository.deleteAllInBatch();

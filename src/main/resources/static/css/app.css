@@ -1126,3 +1126,24 @@ body {
     color: var(--text-light);
     margin-top: 2px;
 }
+
+/* ==========================================================================
+   TaskFlow Notification Center Styles
+   ========================================================================== */
+.notification-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.notification-item:hover {
+    background-color: #f1f5f9 !important;
+}
+
+.notification-item.unread {
+    background-color: #f8fafc;
+}
+
+.fs-xxs {
+    font-size: 0.7rem;
+}
+
