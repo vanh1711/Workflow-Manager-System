@@ -7,13 +7,16 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
+# Copy cấu hình Maven Mirror (Google CDN) để tránh bị chặn 429 Too Many Requests trên Render
+COPY maven-settings.xml /root/.m2/settings.xml
+
 # Copy tệp pom.xml và tải dependencies (tận dụng Docker layer cache)
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN mvn -s /root/.m2/settings.xml dependency:go-offline -B || true
 
 # Copy toàn bộ mã nguồn và biên dịch đóng gói
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn -s /root/.m2/settings.xml clean package -DskipTests
 
 # Giai đoạn 2: Tạo runtime image siêu nhẹ
 FROM eclipse-temurin:17-jre-jammy
