@@ -31,7 +31,7 @@ public class ApplicationStartupListener {
 
     private final Environment environment;
 
-    @Value("${app.browser.auto-open:true}")
+    @Value("${app.browser.auto-open:false}")
     private boolean autoOpenBrowser;
 
     @EventListener(ApplicationReadyEvent.class)

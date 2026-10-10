@@ -2,15 +2,11 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
     <header th:fragment="navbar" class="top-navbar">
-        <!-- Breadcrumb navigation -->
-        <div class="breadcrumb-custom d-none d-md-flex">
-            <span>TaskFlow</span>
-            <i class="bi bi-chevron-right" style="font-size: 0.7rem;"></i>
-            <span>Doanh nghiệp</span>
-            <i class="bi bi-chevron-right" style="font-size: 0.7rem;"></i>
-            <span class="active-item" th:text="${activeNav == 'dashboard' ? 'Bảng điều khiển' : (activeNav == 'kanban' ? 'Bảng Kanban' : (activeNav == 'categories' ? 'Danh mục' : 'Danh sách Task'))}">
-                Công việc
-            </span>
+        <!-- Header Page Title -->
+        <div class="d-none d-md-flex align-items-center">
+            <h1 class="h6 mb-0 fw-bold text-dark" th:text="${activeNav == 'dashboard' ? 'Bảng điều khiển' : (activeNav == 'kanban' ? 'Bảng Kanban' : (activeNav == 'categories' ? 'Danh mục dự án' : (activeNav == 'calendar' ? 'Lịch công việc' : (activeNav == 'users' ? 'Quản lý người dùng' : (activeNav == 'profile' ? 'Hồ sơ cá nhân' : 'Danh sách công việc')))))}">
+                Bảng điều khiển
+            </h1>
         </div>
 
 
